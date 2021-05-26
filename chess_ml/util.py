@@ -100,3 +100,27 @@ def string_pos_to_number(pos):
         if pos[0] == num_string[i]:
             row = i
     return row + (col*8) + 1
+
+
+def move_from_to(pos, move):
+    """
+    Returns a list with from-position and to-position
+    :param pos: current position
+    :param move: move from current position
+    :return: a list on the form [[from_x, from_y], [to_x, to_y]]
+    """
+    return [[pos[0], pos[1]], [pos[0]+move[0], pos[1]+move[1]]]
+
+
+def add_move_list_to_fen_list(fen_list, move_list):
+    """
+    Adds move to fen_list for perceptron
+    :param fen_list: fen as a list
+    :param move_list: move as a list on the form [[from_x, from_y], [to_x, to_y]]
+    :return: a 1d-list with fen_list first and move_list last
+    """
+    ret_list = fen_list.copy()
+    for move in move_list:
+        for elem in move:
+            ret_list.append(elem)
+    return ret_list

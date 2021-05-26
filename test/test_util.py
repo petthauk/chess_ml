@@ -1,5 +1,6 @@
 import chess_ml.util as util
 import pytest
+import random
 
 fen = "rn1qkbnr/pp2pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
 
@@ -44,3 +45,35 @@ def test_string_pos_to_number():
             string_list2.append(c)
     for i in range(len(string_list2)):
         assert util.string_pos_to_number(string_list2[i]) == i+1
+
+
+def test_move_from_to():
+    pos = [random.randint(1, 7), random.randint(0, 4)]
+    move = [-1, 3]
+    assert util.move_from_to(pos, move) == [
+        [pos[0], pos[1]],
+        [pos[0]+move[0], pos[1]+move[1]]
+    ]
+
+
+def test_add_move_list_to_fen_list():
+    move_list = [
+        [
+            random.randint(0, 7),
+            random.randint(0, 7)
+        ],
+        [
+            random.randint(0, 7),
+            random.randint(0, 7)
+        ]
+    ]
+    fen_list = [random.randint(0, 7), random.randint(0, 7)]
+    ret_list = [
+        fen_list[0],
+        fen_list[1],
+        move_list[0][0],
+        move_list[0][1],
+        move_list[1][0],
+        move_list[1][1]
+    ]
+    assert util.add_move_list_to_fen_list(fen_list, move_list) == ret_list
