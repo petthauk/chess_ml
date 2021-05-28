@@ -1,3 +1,8 @@
+import numpy as np
+import pandas
+import random
+
+
 EMPTY = 0
 PAWN = 1
 KNIGHT = 2
@@ -93,7 +98,6 @@ def string_pos_to_number(pos):
     if pos == "-":
         return 0
     col = 8-int(pos[1])
-    print(col)
     row = 0
     num_string = [c for c in ["a", "b", "c", "d", "e", "f", "g", "h"]]
     for i in range(8):
@@ -124,3 +128,95 @@ def add_move_list_to_fen_list(fen_list, move_list):
         for elem in move:
             ret_list.append(elem)
     return ret_list
+
+
+def get_data(fen, square, move):
+    """
+    Gets data for use with perceptron
+    :param fen: fen-string from chess-game
+    :param square: which square we are checking move from
+    :param move: current move to check
+    :return: a list for perceptron
+    """
+    return add_move_list_to_fen_list(fen_to_list(fen), move_from_to(square, move))
+
+
+def get_promote_data(fen, piece):
+    """
+    Gets data for promotion
+    :param fen: fen-string
+    :param piece: which piece to promote to. "n", "b", "r" or "q"
+    :return: a list for promote-perceptron
+    """
+    ret_list = fen_to_list(fen)
+    if piece == "n":
+        ret_list.append(KNIGHT)
+    if piece == "b":
+        ret_list.append(BISHOP)
+    if piece == "r":
+        ret_list.append(ROOK)
+    if piece == "q":
+        ret_list.append(QUEEN)
+    return ret_list
+
+
+def get_weights(file, layer_sizes=None):
+    """
+    Get weights from json-file. Makes new weights if file doesn't exist or is empty
+    :param layer_sizes:
+    :param file: json-file
+    :return: list of weights
+    """
+    # For testing
+    if layer_sizes is None:
+        layer_sizes = np.array([6, 4, 1])
+
+    depth = len(layer_sizes)
+    try:
+        weights = np.load(file, allow_pickle=True)
+    except FileNotFoundError:
+        new_weights = []
+        for i in range(depth - 1):
+            new_weights.append(np.random.randn(layer_sizes[i] + 1, layer_sizes[i+1]) * 0.1)
+        new_weights = np.array(new_weights, dtype=object)
+        np.save(file, new_weights)
+        weights = np.load(file, allow_pickle=True)
+    return weights
+
+
+def save_weights(weights, file):
+    """
+    Save weights to file
+    :param weights: weights to save
+    :param file: file to save to. will make a new file if it doesn't exist
+    :return:
+    """
+    np.save(file, weights)
+
+
+def add_bias(data):
+    ret_list = [-1]
+    for d in data:
+        ret_list.append(d)
+    return ret_list
+
+
+def decide_from_predictions(predictions):
+    total = 0
+    for p in predictions:
+        total += p[1]
+    prob_list = []
+    total_prob = 0
+    for i in range(len(predictions)):
+        prob_list.append((predictions[i][1] / total) + total_prob)
+        total_prob += predictions[i][1] / total
+    r = random.random()
+    i = 0
+    try:
+        while prob_list[i] < r:
+            i += 1
+    except IndexError:
+        i = len(prob_list)-1
+    if i > len(prob_list)-1:
+        i = len(prob_list)-1
+    return predictions[i]
