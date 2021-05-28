@@ -74,7 +74,10 @@ class Perceptron:
         biased_data = util.add_bias(data[0])
         for i in range(len(new_weights_input)):
             for j in range(len(new_weights_input[i])):
-                new_weights_input[i][j] = new_weights_input[i][j] - eta * 2 * (predict - target) * self.weights[1][j] * biased_activation[j] * biased_data[i]
+                new_weights_input[i][j] = (
+                        new_weights_input[i][j] - eta * 2 * (predict - target)
+                        * self.weights[1][j] * biased_activation[j] * biased_data[i]
+                )
         ret_weights = [new_weights_input, new_weights_output]
         return ret_weights
 

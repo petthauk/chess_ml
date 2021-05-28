@@ -59,6 +59,8 @@ def run(b, players):
                         promote_list.append(pl)
                 pg.event.clear()
                 pg.event.post(pg.event.Event(QUIT))
+                # Update game_log
+                util.update_game_log(b.get_status())
 
     print("Updating weights")
     # Find mean of all weights and save new weights

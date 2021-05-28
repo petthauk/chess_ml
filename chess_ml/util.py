@@ -1,5 +1,5 @@
+import json
 import numpy as np
-import pandas
 import random
 
 
@@ -220,3 +220,25 @@ def decide_from_predictions(predictions):
     if i > len(prob_list)-1:
         i = len(prob_list)-1
     return predictions[i]
+
+
+def update_game_log(result):
+    try:
+        with open("data/result.json", "r") as f:
+            try:
+                result_dict = json.load(f)
+            except json.JSONDecodeError:
+                result_dict = {"Games played": 0, "White wins": 0, "Black Wins": 0, "Draw": 0}
+    except FileNotFoundError:
+        # File not found, make file and adding result
+        result_dict = {"Games played": 0, "White wins": 0, "Black Wins": 0, "Draw": 0}
+    result_dict["Games played"] += 1
+    if result == "w":
+        result_dict["White wins"] += 1
+    if result == "b":
+        result_dict["Black Wins"] += 1
+    if result == "d":
+        result_dict["Draw"] += 1
+    j = json.dumps(result_dict)
+    with open("data/result.json", "w") as f:
+        f.write(j)
