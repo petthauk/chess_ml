@@ -1,6 +1,10 @@
-import chess_ml.util as util
-import pytest
 import random
+import os
+
+import pytest
+import numpy as np
+
+import chess_ml.util as util
 
 fen = "rn1qkbnr/pp2pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
 
@@ -77,3 +81,38 @@ def test_add_move_list_to_fen_list():
         move_list[1][1]
     ]
     assert util.add_move_list_to_fen_list(fen_list, move_list) == ret_list
+
+
+def test_get_weights():
+    ret_list = np.array(
+        [
+            np.array([0.1, 0.3, 0.2], dtype=object),
+            np.array([1.2, 0.4], dtype=object)
+        ], dtype=object)
+    np.save("data/test_weights.npy", ret_list)
+    w = util.get_weights("data/test_weights.npy")
+    for i in range(len(ret_list)):
+        for j in range(len(ret_list[i])):
+            assert w[i][j] == ret_list[i][j]
+
+
+def test_get_weights_no_file():
+    if os.path.exists("data/test_weights.npy"):
+        os.remove("data/test_weights.npy")
+    w = util.get_weights("data/test_weights.npy")
+    assert w.shape == (2, )
+    assert w[0].shape == (7, 4)
+    assert w[1].shape == (5, 1)
+
+
+def test_save_weights():
+    weights = np.array([4, 3])
+    util.save_weights(weights, "data/test_weights.npy")
+    w = util.get_weights("data/test_weights.npy")
+    for i in range(len(weights)):
+        assert weights[i] == w[i]
+
+
+def test_add_bias():
+    assert util.add_bias([2, 3]) == [-1, 2, 3]
+    assert util.add_bias([4, 3, 2]) == [-1, 4, 3, 2]
