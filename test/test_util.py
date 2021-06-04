@@ -6,33 +6,150 @@ import numpy as np
 
 import chess_ml.util as util
 
-fen = "rn1qkbnr/pp2pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 0"
+fen = "rn1qkbnr/pp2pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 50 124"
+piece_list = ["p", "n", "b", "r", "q", "k", "P", "N", "B", "R", "Q", "K"]
+fen_list = [
+        0, 0, 0, -1, 0, 0,
+        0, -1, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, -1, 0,
+        0, 0, 0, 0, 0, -1,
+        0, 0, -1, 0, 0, 0,
+        0, -1, 0, 0, 0, 0,
+        0, 0, 0, -1, 0, 0,
+
+        -1, 0, 0, 0, 0, 0,
+        -1, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        -1, 0, 0, 0, 0, 0,
+        -1, 0, 0, 0, 0, 0,
+        -1, 0, 0, 0, 0, 0,
+        -1, 0, 0, 0, 0, 0,
+
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0,
+
+        0, 0, 0, 1, 0, 0,
+        0, 1, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 1, 0,
+        0, 0, 0, 0, 0, 1,
+        0, 0, 1, 0, 0, 0,
+        0, 1, 0, 0, 0, 0,
+        0, 0, 0, 1, 0, 0,
+
+        1,
+        1, 1, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        50,
+        124
+    ]
+sample_data = [[[2, 3, 4, 5, 6, 7], [1]], 0.34]
+
+
+def test_add_piece_to_list_black_pawn():
+    assert util.add_piece_to_list("p") == [-1, 0, 0, 0, 0, 0]
+
+
+def test_add_piece_to_list_white_pawn():
+    assert util.add_piece_to_list("P") == [1, 0, 0, 0, 0, 0]
+
+
+def test_add_piece_to_list_black_knight():
+    assert util.add_piece_to_list("n") == [0, -1, 0, 0, 0, 0]
+
+
+def test_add_piece_to_list_white_knight():
+    assert util.add_piece_to_list("N") == [0, 1, 0, 0, 0, 0]
+
+
+def test_add_piece_to_list_black_bishop():
+    assert util.add_piece_to_list("b") == [0, 0, -1, 0, 0, 0]
+
+
+def test_add_piece_to_list_white_bishop():
+    assert util.add_piece_to_list("B") == [0, 0, 1, 0, 0, 0]
+
+
+def test_add_piece_to_list_black_rook():
+    assert util.add_piece_to_list("r") == [0, 0, 0, -1, 0, 0]
+
+
+def test_add_piece_to_list_white_rook():
+    assert util.add_piece_to_list("R") == [0, 0, 0, 1, 0, 0]
+
+
+def test_add_piece_to_list_black_queen():
+    assert util.add_piece_to_list("q") == [0, 0, 0, 0, -1, 0]
+
+
+def test_add_piece_to_list_white_queen():
+    assert util.add_piece_to_list("Q") == [0, 0, 0, 0, 1, 0]
+
+
+def test_add_piece_to_list_black_king():
+    assert util.add_piece_to_list("k") == [0, 0, 0, 0, 0, -1]
+
+
+def test_add_piece_to_list_white_king():
+    assert util.add_piece_to_list("K") == [0, 0, 0, 0, 0, 1]
 
 
 def test_fen_to_list():
-    answer_list = [
-        -4, -2, 0, -5, -6, -3, -2, -4,
-        -1, -1, 0, 0, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        4, 2, 3, 5, 6, 3, 2, 4,
-        1,
-        1,
-        1,
-        1,
-        1,
-        0,
-        0,
-        0
-    ]
     ret_list = util.fen_to_list(fen)
-    for i in range(len(answer_list)):
-        print("{} {}".format(answer_list[i], ret_list[i]))
+    x = 0
+    for i in range(len(fen_list)):
+        if x % (6*8) == 0:
+            print("New Line")
+        if x % 6 == 0:
+            print("Next square")
+        x += 1
+        print("{} {}".format(fen_list[i], ret_list[i]))
         try:
-            assert answer_list[i] == ret_list[i]
+            assert fen_list[i] == ret_list[i]
         except AssertionError as e:
             pytest.fail(str(e)+" at position "+str(i))
 
@@ -60,6 +177,16 @@ def test_move_from_to():
     ]
 
 
+def test_get_move_from_to_return_to():
+    _, to = util.get_move_from_to(sample_data)
+    assert to == [6, 7]
+
+
+def test_get_move_from_to_return_from():
+    fr, _ = util.get_move_from_to(sample_data)
+    assert fr == [4, 5]
+
+
 def test_add_move_list_to_fen_list():
     move_list = [
         [
@@ -71,16 +198,30 @@ def test_add_move_list_to_fen_list():
             random.randint(0, 7)
         ]
     ]
-    fen_list = [random.randint(0, 7), random.randint(0, 7)]
+    f_list = [random.randint(0, 7), random.randint(0, 7)]
     ret_list = [
-        fen_list[0],
-        fen_list[1],
+        f_list[0],
+        f_list[1],
         move_list[0][0],
         move_list[0][1],
         move_list[1][0],
         move_list[1][1]
     ]
-    assert util.add_move_list_to_fen_list(fen_list, move_list) == ret_list
+    assert util.add_move_list_to_fen_list(f_list, move_list) == ret_list
+
+
+def test_get_data():
+    answer_list = fen_list.copy()
+    square = [1, 2]
+    move = [3, 4]
+    for s in square:
+        answer_list.append(s)
+    for m in range(len(move)):
+        answer_list.append(square[m]+move[m])
+    ret_list = util.get_data(fen, square, move)
+    print(ret_list)
+    for i in range(len(answer_list)):
+        assert ret_list[i] == answer_list[i]
 
 
 def test_get_weights():

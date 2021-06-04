@@ -10,6 +10,16 @@ BISHOP = 3
 ROOK = 4
 QUEEN = 5
 KING = 6
+piece_dict = {"p": PAWN, "n": KNIGHT, "b": BISHOP, "r": ROOK, "q": QUEEN, "k": KING}
+
+
+def add_piece_to_list(piece):
+    piece_list = [0 for _ in range(12)]
+    if piece.islower():
+        piece_list[(piece_dict[piece.lower()] - 1) * 2] = 1
+    elif piece.isupper():
+        piece_list[(piece_dict[piece.lower()] * 2) - 1] = 1
+    return piece_list
 
 
 def fen_to_list(fen):
@@ -22,34 +32,14 @@ def fen_to_list(fen):
     value_list = []
     # Board
     for c in fen_list[0]:
-        if c == "p":
-            value_list.append(PAWN*-1)
-        if c == "n":
-            value_list.append(KNIGHT*-1)
-        if c == "b":
-            value_list.append(BISHOP*-1)
-        if c == "r":
-            value_list.append(ROOK*-1)
-        if c == "q":
-            value_list.append(QUEEN*-1)
-        if c == "k":
-            value_list.append(KING*-1)
-        if c == "P":
-            value_list.append(PAWN)
-        if c == "N":
-            value_list.append(KNIGHT)
-        if c == "B":
-            value_list.append(BISHOP)
-        if c == "R":
-            value_list.append(ROOK)
-        if c == "Q":
-            value_list.append(QUEEN)
-        if c == "K":
-            value_list.append(KING)
+        if c.lower() in piece_dict:
+            for p in add_piece_to_list(c):
+                value_list.append(p)
         try:
             number = int(c)
             for _ in range(number):
-                value_list.append(EMPTY)
+                for _ in range(12):
+                    value_list.append(0)
         except ValueError:
             pass
     # Black or White
@@ -72,7 +62,14 @@ def fen_to_list(fen):
         value_list.append(c)
 
     # En passent
-    value_list.append(string_pos_to_number(fen_list[3]))
+    number = string_pos_to_number(fen_list[3])
+    en_passent = [0 for _ in range(16)]
+    if int(number/8) == 2:
+        en_passent[(number % 8) - 1] = 1
+    elif int(number/8) == 5:
+        en_passent[8 + (number % 8) - 1] = 1
+    for p in en_passent:
+        value_list.append(p)
 
     # Half-move
     try:
@@ -111,9 +108,36 @@ def move_from_to(pos, move):
     Returns a list with from-position and to-position
     :param pos: current position
     :param move: move from current position
-    :return: a list on the form [[from_x, from_y], [to_x, to_y]]
+    :return: [[from_x, from_y], [to_x, to_y]]
     """
-    return [[pos[0], pos[1]], [pos[0]+move[0], pos[1]+move[1]]]
+    ret_list = [0 for _ in range(64)]
+    for i in range(len(ret_list)):
+        if int(i / 8) == pos[0] and i % 8 == pos[1]:
+            ret_list[i] = -1
+        elif int(i / 8) == pos[0]+move[0] and i % 8 == pos[1]+move[1]:
+            ret_list[i] = 1
+    return ret_list
+
+
+def get_move_from_to(data):
+    """
+    Gets move from and to from dataset
+    :param data: dataset
+    :return: move_from, move_to
+    """
+    move_list = data[0][0][-64:]
+    move_from = [9, 9]
+    move_to = [9, 9]
+    for i in range(len(move_list)):
+        if move_list[i] == -1:
+            move_from[0] = int(i/8)
+            move_from[1] = i % 8
+        if move_list[i] == 1:
+            move_to[0] = int(i/8)
+            move_to[1] = i % 8
+    if move_from == [9, 9] or move_to == [9, 9]:
+        raise Exception("Couldn't find moves")
+    return move_from, move_to
 
 
 def add_move_list_to_fen_list(fen_list, move_list):
@@ -125,20 +149,17 @@ def add_move_list_to_fen_list(fen_list, move_list):
     """
     ret_list = fen_list.copy()
     for move in move_list:
-        for elem in move:
-            ret_list.append(elem)
+        ret_list.append(move)
     return ret_list
 
 
-def get_data(fen, square, move):
+def get_data(fen):
     """
     Gets data for use with perceptron
     :param fen: fen-string from chess-game
-    :param square: which square we are checking move from
-    :param move: current move to check
     :return: a list for perceptron
     """
-    return add_move_list_to_fen_list(fen_to_list(fen), move_from_to(square, move))
+    return fen_to_list(fen)
 
 
 def get_promote_data(fen, piece):
@@ -149,14 +170,29 @@ def get_promote_data(fen, piece):
     :return: a list for promote-perceptron
     """
     ret_list = fen_to_list(fen)
-    if piece == "n":
-        ret_list.append(KNIGHT)
-    if piece == "b":
-        ret_list.append(BISHOP)
-    if piece == "r":
-        ret_list.append(ROOK)
-    if piece == "q":
-        ret_list.append(QUEEN)
+    promote_list = [0 for _ in range(8)]
+    if piece.lower() == "n":
+        if piece.islower():
+            promote_list[0] = 1
+        else:
+            promote_list[1] = 1
+    elif piece.lower() == "b":
+        if piece.islower():
+            promote_list[2] = 1
+        else:
+            promote_list[3] = 1
+    elif piece.lower() == "r":
+        if piece.islower():
+            promote_list[4] = 1
+        else:
+            promote_list[5] = 1
+    elif piece.lower() == "q":
+        if piece.islower():
+            promote_list[6] = 1
+        else:
+            promote_list[7] = 1
+    for p in promote_list:
+        ret_list.append(p)
     return ret_list
 
 
@@ -201,15 +237,22 @@ def add_bias(data):
     return ret_list
 
 
-def decide_from_predictions(predictions):
+def roulette_wheel(predictions):
+    """
+    Using the roulette wheel algorithm to choose move
+    :param predictions: list of moves
+    :return:
+    """
     total = 0
     for p in predictions:
-        total += p[1]
+        total += float(p[1])
+    if total == 0.0:
+        total = 1e-17
     prob_list = []
     total_prob = 0
     for i in range(len(predictions)):
-        prob_list.append((predictions[i][1] / total) + total_prob)
-        total_prob += predictions[i][1] / total
+        prob_list.append(float((predictions[i][1]) / total) + total_prob)
+        total_prob += float(predictions[i][1]) / total
     r = random.random()
     i = 0
     try:
@@ -220,6 +263,32 @@ def decide_from_predictions(predictions):
     if i > len(prob_list)-1:
         i = len(prob_list)-1
     return predictions[i]
+
+
+def decide_from_predictions(predictions):
+    """
+    Returns the best move, or using the roulette-wheel to get best move
+    :param predictions: list of moves
+    :return:
+    """
+    # Get random number
+    rand = random.randint(0, 4)
+    if rand == 1:
+        r = random.randint(0, 1)
+        if r == 0:
+            print("Using roulette-wheel to predict move")
+            return roulette_wheel(predictions)
+        if r == 1:
+            print("Choosing move at random for exploration")
+            r_move = random.randint(0, len(predictions)-1)
+            return predictions[r_move]
+    # Else: Choose best move
+    print("Choosing best move")
+    b_move = predictions[0]
+    for p in predictions:
+        if p[1] > b_move[1]:
+            b_move = p
+    return b_move
 
 
 def update_game_log(result):
@@ -242,3 +311,4 @@ def update_game_log(result):
     j = json.dumps(result_dict)
     with open("data/result.json", "w") as f:
         f.write(j)
+
