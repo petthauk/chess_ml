@@ -141,6 +141,8 @@ class MlPlayer:
         :return: weight_list
         """
         new_weight_list = []
+
+        # Go through game and update weights
         for i in tqdm(range(len(self.game_history))):
             predict = self.game_history[i][1]
             if self.color == "b":
@@ -155,10 +157,18 @@ class MlPlayer:
         :return: weight_list
         """
         new_prom_list = []
-        for i in tqdm(range(len(self.promote_history))):
-            predict = self.promote_history[i][1]
-            if self.color == "b":
-                predict = 1 - predict
-            new_prom_list.append(self.promote_perceptron.back_prop(self.promote_history[i][0], predict, target))
+        if len(self.promote_history) > 0:
+            # Go through promoting and update weights
+            for i in tqdm(range(len(self.promote_history))):
+                predict = self.promote_history[i][1]
+                if self.color == "b":
+                    predict = 1 - predict
+                new_prom_list.append(
+                    self.promote_perceptron.back_prop(
+                        self.promote_history[i][0],
+                        predict,
+                        target
+                    )
+                )
         return new_prom_list
 

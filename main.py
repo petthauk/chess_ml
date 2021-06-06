@@ -98,7 +98,7 @@ def run(b, players):
 
     status = game_outcome_dict[b.get_status()]
     if players[0].get_color() == "w":
-        print("White")
+        print("\nWhite")
         pos = players[0].learn_pos(status)
         prom = players[0].learn_prom(status)
         for wl in pos:
@@ -106,7 +106,7 @@ def run(b, players):
         for pl in prom:
             promote_list.append(pl)
     if players[1].get_color() == "b":
-        print("Black")
+        print("\nBlack")
         pos = players[1].learn_pos(status)
         prom = players[1].learn_prom(status)
         for wl in pos:

@@ -16,8 +16,8 @@ class Perceptron:
     def __init__(self, fen, file):
         self.fen = fen
         self.weights = []
-        for w in self.init_weights(file):
-            self.weights.append(w)
+        self.init_weights(file)
+        # Update weights in accordance to start position
 
     def init_weights(self, file):
         ret = None
@@ -27,27 +27,27 @@ class Perceptron:
                 file,
                 layer_sizes=np.array([
                     length,
-                    8,
-                    8,
-                    8,
-                    8,
+                    64,
+                    64,
                     1
                 ], dtype=object)
             )
+            for w in ret:
+                self.weights.append(w)
+
         elif file == "data/promote_weights.npy":
             length = len(util.get_promote_data(self.fen, "n"))
             ret = util.get_weights(
                 file,
                 layer_sizes=np.array([
                     length,
-                    8,
-                    8,
-                    8,
-                    8,
+                    64,
+                    64,
                     1
                 ], dtype=object)
             )
-        return ret
+            for w in ret:
+                self.weights.append(w)
 
     def predict(self, data):
         """

@@ -268,27 +268,43 @@ def roulette_wheel(predictions):
 def decide_from_predictions(predictions):
     """
     Returns the best move, or using the roulette-wheel to get best move
+    if the two best moves is closer than 0.005 in prediction
     :param predictions: list of moves
     :return:
     """
-    # Get random number
-    rand = random.randint(0, 4)
-    if rand == 1:
-        r = random.randint(0, 1)
-        if r == 0:
-            print("Using roulette-wheel to predict move")
-            return roulette_wheel(predictions)
-        if r == 1:
-            print("Choosing move at random for exploration")
-            r_move = random.randint(0, len(predictions)-1)
-            return predictions[r_move]
-    # Else: Choose best move
-    print("Choosing best move")
-    b_move = predictions[0]
+    if len(predictions) == 0:
+        raise Exception("No predictions to decide from!!!!!!")
+    # Return if only one prediction
+    if len(predictions) == 1:
+        print("Only one possible move")
+        return predictions[0]
+
+    # Get the best two moves
+    best_moves = []
     for p in predictions:
-        if p[1] > b_move[1]:
-            b_move = p
-    return b_move
+        if len(best_moves) == 0:
+            best_moves.append(p)
+        elif len(best_moves) == 1:
+            if p[1] > best_moves[0][1]:
+                temp = best_moves.pop()
+                best_moves.append(p)
+                best_moves.append(temp)
+            else:
+                best_moves.append(p)
+        elif len(best_moves) == 2:
+            if p[1] > best_moves[0][1]:
+                temp = best_moves[0]
+                best_moves[0] = p
+                best_moves[1] = temp
+            elif p[1] > best_moves[1][1]:
+                best_moves[1] = p
+
+    # If similar (less than 0.005 in prediction apart), do roulette-wheel
+    if abs(best_moves[0][1] - best_moves[1][1]) < 0.005:
+        print("Using roulette-wheel to get move")
+        return roulette_wheel(predictions)
+    print("Choosing best move")
+    return best_moves[0]
 
 
 def update_game_log(result):
