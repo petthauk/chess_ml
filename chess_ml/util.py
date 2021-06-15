@@ -3,7 +3,6 @@ import numpy as np
 import random
 
 
-EMPTY = 0
 PAWN = 1
 KNIGHT = 2
 BISHOP = 3
@@ -42,46 +41,6 @@ def fen_to_list(fen):
                     value_list.append(0)
         except ValueError:
             pass
-    # Black or White
-    if fen_list[1] == "w":
-        value_list.append(1)
-    if fen_list[1] == "b":
-        value_list.append(-1)
-
-    # Castle
-    castle_list = [0, 0, 0, 0]
-    if "K" in fen_list[2]:
-        castle_list[0] = 1
-    if "Q" in fen_list[2]:
-        castle_list[1] = 1
-    if "k" in fen_list[2]:
-        castle_list[2] = 1
-    if "q" in fen_list[2]:
-        castle_list[3] = 1
-    for c in castle_list:
-        value_list.append(c)
-
-    # En passent
-    number = string_pos_to_number(fen_list[3])
-    en_passent = [0 for _ in range(16)]
-    if int(number/8) == 2:
-        en_passent[(number % 8) - 1] = 1
-    elif int(number/8) == 5:
-        en_passent[8 + (number % 8) - 1] = 1
-    for p in en_passent:
-        value_list.append(p)
-
-    # Half-move
-    try:
-        value_list.append(int(fen_list[4]))
-    except ValueError:
-        value_list.append(0)
-
-    # Full-move
-    try:
-        value_list.append(int(fen_list[5]))
-    except ValueError:
-        value_list.append(0)
 
     return value_list
 
@@ -268,7 +227,7 @@ def roulette_wheel(predictions):
 def decide_from_predictions(predictions):
     """
     Returns the best move, or using the roulette-wheel to get best move
-    if the two best moves is closer than 0.005 in prediction
+    if the two best moves is closer than 0.001 in prediction
     :param predictions: list of moves
     :return:
     """
@@ -299,8 +258,8 @@ def decide_from_predictions(predictions):
             elif p[1] > best_moves[1][1]:
                 best_moves[1] = p
 
-    # If similar (less than 0.005 in prediction apart), do roulette-wheel
-    if abs(best_moves[0][1] - best_moves[1][1]) < 0.005:
+    # If similar (less than 0.001 in prediction apart), do roulette-wheel
+    if abs(best_moves[0][1] - best_moves[1][1]) < 0.001:
         print("Using roulette-wheel to get move")
         return roulette_wheel(predictions)
     print("Choosing best move")

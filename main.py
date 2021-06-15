@@ -9,7 +9,7 @@ import numpy as np
 from chess_ml.perceptron import Perceptron
 
 
-def run(b, players):
+def run(b, move_perceptron, promote_perceptron, players):
     game_outcome_dict = {"w": 1.0, "b": 0.0, "d": 0.5}
     weight_list = []
     promote_list = []
@@ -107,25 +107,31 @@ def run(b, players):
             promote_list.append(pl)
     if players[1].get_color() == "b":
         print("\nBlack")
-        pos = players[1].learn_pos(status)
+        if players[0].get_color() == "h":
+            pos = players[1].learn_pos(status)
+            for wl in pos:
+                weight_list.append(wl)
         prom = players[1].learn_prom(status)
-        for wl in pos:
-            weight_list.append(wl)
         for pl in prom:
             promote_list.append(pl)
 
-    print("Updating weights")
+    print("\nUpdating weights")
     # Find mean of all weights and save new weights
     new_weights = [
         np.zeros(weight_list[0][i].shape) for i in range(len(weight_list[0]))
     ]
+    old_weights = move_perceptron.weights
     for a in range(len(weight_list[0])):
         for i in range(weight_list[0][a].shape[0]):
             for j in range(weight_list[0][a].shape[1]):
                 tot = 0.0
+                num_of_weights = 0
                 for k in range(len(weight_list)):
-                    tot += weight_list[k][a][i][j]
-                new_weights[a][i][j] = tot / len(weight_list)
+                    if weight_list[k][a][i][j] != old_weights[a][i][j]:
+                        tot += weight_list[k][a][i][j]
+                        num_of_weights += 1
+                if num_of_weights != 0:
+                    new_weights[a][i][j] = tot / num_of_weights
     util.save_weights(np.array(new_weights, dtype=object), "data/weights.npy")
     print()
 
@@ -135,13 +141,18 @@ def run(b, players):
         new_promote = [
             np.zeros(promote_list[0][i].shape) for i in range(len(promote_list[0]))
         ]
+        old_promote = promote_perceptron.weights
         for a in range(len(promote_list[0])):
             for i in range(promote_list[0][a].shape[0]):
                 for j in range(promote_list[0][a].shape[1]):
                     tot = 0.0
+                    num_of_promote = 0
                     for k in range(len(promote_list)):
-                        tot += promote_list[k][a][i][j]
-                    new_promote[a][i][j] = tot / len(promote_list)
+                        if promote_list[k][a][i][j] != old_promote[a][i][j]:
+                            tot += promote_list[k][a][i][j]
+                            num_of_promote += 1
+                    if num_of_promote != 0:
+                        new_promote[a][i][j] = tot / num_of_promote
         util.save_weights(np.array(new_promote, dtype=object), "data/promote_weights.npy")
     print()
 
@@ -153,7 +164,7 @@ def main():
         b = g.get_board()
         move_perceptron = Perceptron(b.get_fen(), "data/weights.npy")
         promote_perceptron = Perceptron(b.get_fen(), "data/promote_weights.npy")
-        run(b, players=[
+        run(b, move_perceptron, promote_perceptron, players=[
             mlplayer.MlPlayer("w", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
             mlplayer.MlPlayer("b", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron)
         ])

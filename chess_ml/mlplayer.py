@@ -28,10 +28,21 @@ class MlPlayer:
             self.perceptron = perceptron.Perceptron(fen, "data/weights.npy")
 
         move_predictions = []
-        print("Predicting win-rate for each move")
-        # Get current fen data and board-array
+
+        # Predict win-rate for current position and put in move_predictions
+        # Get current fen-data
         old_fen = self.board.get_fen()
-        old_board_array = self.board.get_board_array().copy()
+        # Get data
+        data = util.get_data(old_fen)
+        if data[-1] != 1 or self.color != "w":
+            p, activations = self.perceptron.predict(data)
+            if self.color == "b":
+                p = 1.0 - p
+            self.game_history.append(
+                [[a for a in activations], p]
+            )
+
+        print("Predicting win-rate for each move")
         # Go through every square and predict moves from it
         for i in range(8):
             for j in range(8):
@@ -141,13 +152,29 @@ class MlPlayer:
         :return: weight_list
         """
         new_weight_list = []
-
+        eta_list = []
         # Go through game and update weights
         for i in tqdm(range(len(self.game_history))):
             predict = self.game_history[i][1]
+            eta = abs(predict-target)
+            if eta > 1.0:
+                eta = 1.0
+            eta_list.append(eta)
             if self.color == "b":
                 predict = 1 - predict
-            new_weight_list.append(self.perceptron.back_prop(self.game_history[i][0], predict, target))
+            new_weight_list.append(
+                self.perceptron.back_prop(
+                    self.game_history[i][0],
+                    predict,
+                    target,
+                    eta=eta
+                )
+            )
+        tot_eta = 0
+        for eta in eta_list:
+            tot_eta += eta
+        mean_eta = tot_eta / len(eta_list)
+        print("\nMean ETA: {:.2f}\n".format(mean_eta))
         return new_weight_list
 
     def learn_prom(self, target):
@@ -157,18 +184,29 @@ class MlPlayer:
         :return: weight_list
         """
         new_prom_list = []
+        eta_list = []
         if len(self.promote_history) > 0:
             # Go through promoting and update weights
             for i in tqdm(range(len(self.promote_history))):
                 predict = self.promote_history[i][1]
+                eta = abs(predict-target)
+                if eta > 1.0:
+                    eta = 1.0
+                eta_list.append(eta)
                 if self.color == "b":
                     predict = 1 - predict
                 new_prom_list.append(
                     self.promote_perceptron.back_prop(
                         self.promote_history[i][0],
                         predict,
-                        target
+                        target,
+                        eta=eta
                     )
                 )
+            tot_eta = 0
+            for eta in eta_list:
+                tot_eta += eta
+            mean_eta = tot_eta / len(eta_list)
+            print("\nMean ETA: {:.2f}\n".format(mean_eta))
         return new_prom_list
 

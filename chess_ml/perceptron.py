@@ -27,7 +27,7 @@ class Perceptron:
                 file,
                 layer_sizes=np.array([
                     length,
-                    64,
+                    128,
                     64,
                     1
                 ], dtype=object)
@@ -41,7 +41,7 @@ class Perceptron:
                 file,
                 layer_sizes=np.array([
                     length,
-                    64,
+                    128,
                     64,
                     1
                 ], dtype=object)
