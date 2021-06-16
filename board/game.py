@@ -9,6 +9,9 @@ h = 60 * 8
 
 
 class Game:
+    """
+    Class to setup and start a game
+    """
     def __init__(self):
         self.b = board.Board(w, h)
 

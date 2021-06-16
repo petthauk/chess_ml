@@ -4,8 +4,9 @@ import sys
 import numpy as np
 import os
 import board.chess_logic as logic
-from board import util
+import util.util as util
 
+# Colors for square on board
 WHITE_SQUARE = (255, 220, 177)
 BLACK_SQUARE = (199, 122, 88)
 CLICKED_SQUARE = (255, 0, 0)
@@ -19,12 +20,6 @@ def set_visual_piece(t):
     :param t: type of piece
     :return: image of piece in pygame
     """
-    change_dir = False
-    current_dir = os.listdir()
-    if "board" in current_dir:
-        change_dir = True
-    if change_dir:  # Change directory to board
-        os.chdir(os.path.join(os.getcwd(), "board"))
     img = None
     if t == "P":  # White Pawn
         img = pg.image.load(os.path.join("piece_img", "wP.png"))
@@ -50,8 +45,6 @@ def set_visual_piece(t):
         img = pg.image.load(os.path.join("piece_img", "bQ.png"))
     elif t == "k":  # Black King
         img = pg.image.load(os.path.join("piece_img", "bK.png"))
-    if change_dir:  # Change directory back
-        os.chdir("..")
     return img
 
 
@@ -59,7 +52,6 @@ class Board:
     """
     Chess-board class
     """
-
     def __init__(
             self,
             w=60 * 8,
@@ -244,6 +236,10 @@ class Board:
         return board_array
 
     def update_board(self):
+        """
+        Updates pygame-board
+        :return:
+        """
         self.screen.fill((0, 0, 0))
         self.draw_board()
         self.add_pieces()
@@ -266,7 +262,9 @@ class Board:
         current_colour = True
         for i in range(8):
             for j in range(8):
+                # Get square
                 sqr = self.board_array[i, j]
+
                 if sqr.is_clicked():
                     sqr.add_visual(pg.draw.rect(
                         self.screen,
@@ -343,6 +341,13 @@ class Board:
                     j += 1
 
     def move_piece(self, fr, to, human=False):
+        """
+        Moves piece on board
+        :param fr: Square to move from
+        :param to: Square to move to
+        :param human: If player to move are human or not
+        :return:
+        """
         # Update half-move clock and full-move clock
         self.half_move += 1
         if self.get_bw() == "b":
@@ -357,6 +362,7 @@ class Board:
             self.board_array[fr[0], fr[1]].get_content()
         )
         self.board_array[fr[0], fr[1]].add_content()
+
         # If taking on en-passant
         if self.get_en_passent() != "-":
             if util.array_position_to_string_position(to) == self.get_en_passent():
@@ -365,6 +371,7 @@ class Board:
                 elif to[0] == 5:
                     self.board_array[4, to[1]].add_content()
                 self.half_move = 0
+
         # If castling
         to_content = self.board_array[to[0], to[1]].get_content()
         if "K" in self.castle:
@@ -399,6 +406,7 @@ class Board:
                     )
                     self.board_array[0, 0].add_content()
                     self.remove_from_castle("q")
+
         # If king or rook moves from start-pos, remove castle-right
         if to_content is not None:
             if to_content.get_type() == "K" and fr == [7, 4]:
@@ -417,6 +425,7 @@ class Board:
                     self.remove_from_castle("q")
                 if fr == [0, 7]:
                     self.remove_from_castle("k")
+
         # Update en-passant
         self.en_passent = "-"
         if to_content is not None:
@@ -424,6 +433,7 @@ class Board:
                 self.en_passent = util.array_position_to_string_position([fr[0] - 1, fr[1]])
             if to_content.get_type() == "p" and to[0] - 2 == fr[0]:
                 self.en_passent = util.array_position_to_string_position([fr[0] + 1, fr[1]])
+
         # Promote pawn?
         self.promoting = False
         if to[0] == 0 and self.board_array[to[0], to[1]].get_content().get_type() == "P":
@@ -436,11 +446,16 @@ class Board:
                 self.promote_pawn(to)
 
     def next_turn(self):
+        """
+        Setting up next turn
+        :return:
+        """
         self.new_fen()
         self.set_fen(self.fen)
         if self.get_fen_pos() not in self.positions_in_game:
             self.positions_in_game[self.get_fen_pos()] = 0
         self.positions_in_game[self.get_fen_pos()] += 1
+
         # Check for win, lose or draw
         self.win_lose_draw()
         self.update_board()
@@ -463,6 +478,7 @@ class Board:
         other_piece_than_king = False
         check = logic.check(self.get_board_array(), self.get_bw())
         legal_moves = False
+
         # Go through board to check for moves, check and kings
         for row in self.get_board_array():
             for sqr in row:
@@ -481,6 +497,7 @@ class Board:
                         self.get_en_passent()
                     ):
                         legal_moves = True
+
         # Sets status
         if not white_king_present:
             self.set_status("b")  # Black has won
@@ -536,7 +553,6 @@ b: Bishop
         """
         Square in chess-board
         """
-
         def __init__(self, row, col):
             self.content = None
             self.visual = None
@@ -645,6 +661,7 @@ b: Bishop
                         sq.un_click()
                         sq.un_highlight()
                 return
+
             # If square is previously clicked, un-click
             if self.clicked:
                 self.un_click()
@@ -718,7 +735,6 @@ b: Bishop
         """
         Piece on chess-board
         """
-
         def __init__(self, t):
             """
             Initializes piece

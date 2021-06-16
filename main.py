@@ -1,8 +1,6 @@
-from time import sleep
 from board import game
-from board import util as board_util
 from chess_ml import mlplayer
-from chess_ml import util
+import util.util as util
 import pygame as pg
 from pygame.locals import *
 import numpy as np
@@ -10,6 +8,14 @@ from chess_ml.perceptron import Perceptron
 
 
 def run(b, move_perceptron, promote_perceptron, players):
+    """
+    Run one game
+    :param b: Board
+    :param move_perceptron: Perceptron for moving
+    :param promote_perceptron: Perceptron for promoting
+    :param players: List of two players
+    :return:
+    """
     game_outcome_dict = {"w": 1.0, "b": 0.0, "d": 0.5}
     weight_list = []
     promote_list = []
@@ -67,8 +73,8 @@ def run(b, move_perceptron, promote_perceptron, players):
                     move_from, move_to = players[0].move()
                     b.move_piece(move_from, move_to)
                     print("Move from {} to {}".format(
-                        board_util.array_position_to_string_position(move_from),
-                        board_util.array_position_to_string_position(move_to)
+                        util.array_position_to_string_position(move_from),
+                        util.array_position_to_string_position(move_to)
                     ))
                     if b.get_promoting():
                         promote = players[0].promote_pawn()
@@ -80,8 +86,8 @@ def run(b, move_perceptron, promote_perceptron, players):
                     move_from, move_to = players[1].move()
                     b.move_piece(move_from, move_to)
                     print("Move from {} to {}".format(
-                        board_util.array_position_to_string_position(move_from),
-                        board_util.array_position_to_string_position(move_to)
+                        util.array_position_to_string_position(move_from),
+                        util.array_position_to_string_position(move_to)
                     ))
                     if b.get_promoting():
                         promote = players[1].promote_pawn()
@@ -158,14 +164,18 @@ def run(b, move_perceptron, promote_perceptron, players):
 
 
 def main():
-    while True:
+    """
+    Starts new game
+    :return:
+    """
+    while True:  # Infinite games
         print("Starting new game")
         g = game.Game()
         b = g.get_board()
         move_perceptron = Perceptron(b.get_fen(), "data/weights.npy")
         promote_perceptron = Perceptron(b.get_fen(), "data/promote_weights.npy")
         run(b, move_perceptron, promote_perceptron, players=[
-            mlplayer.MlPlayer("w", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
+            mlplayer.MlPlayer("h", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
             mlplayer.MlPlayer("b", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron)
         ])
 

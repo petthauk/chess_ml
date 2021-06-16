@@ -1,10 +1,8 @@
 import random
 import os
-
 import pytest
 import numpy as np
-
-import chess_ml.util as util
+import util.util as util
 
 fen = "rn1qkbnr/pp2pppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 50 124"
 piece_list = ["p", "n", "b", "r", "q", "k", "P", "N", "B", "R", "Q", "K"]
@@ -88,6 +86,13 @@ fen_list = [
         124
     ]
 sample_data = [[[2, 3, 4, 5, 6, 7], [1]], 0.34]
+
+letter_pos = ["a", "b", "c", "d", "e", "f", "g", "h"]
+number_pos = [str(i) for i in range(8, 0, -1)]
+all_string_pos = []
+for number in number_pos:
+    for letter in letter_pos:
+        all_string_pos.append(letter + number)
 
 
 def test_add_piece_to_list_black_pawn():
@@ -257,3 +262,26 @@ def test_save_weights():
 def test_add_bias():
     assert util.add_bias([2, 3]) == [-1, 2, 3]
     assert util.add_bias([4, 3, 2]) == [-1, 4, 3, 2]
+
+
+def test_string_position_to_array_position():
+    array_row = 0
+    array_col = 0
+    for pos in all_string_pos:
+        assert util.string_position_to_array_position(pos) == [array_row, array_col]
+        array_col += 1
+        if array_col == 8:
+            array_col = 0
+            array_row += 1
+
+
+def test_array_position_to_string_position():
+    array_row = 0
+    array_col = 0
+    for pos in all_string_pos:
+        assert util.array_position_to_string_position([array_row, array_col]) == pos
+        array_col += 1
+        if array_col == 8:
+            array_col = 0
+            array_row += 1
+

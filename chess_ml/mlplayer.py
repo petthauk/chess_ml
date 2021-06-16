@@ -1,6 +1,6 @@
 from chess_ml import perceptron
 from board import chess_logic
-from chess_ml import util
+import util.util as util
 from tqdm import tqdm
 
 

@@ -1,4 +1,4 @@
-from chess_ml import util
+import util.util as util
 import numpy as np
 import math
 

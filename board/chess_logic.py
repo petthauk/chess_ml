@@ -1,4 +1,4 @@
-from board import util
+import util.util as util
 
 
 def add_move_for_straight_line_pieces(move_matrix, row, col, game_board, piece, moves):
@@ -239,9 +239,11 @@ def delete_discovered_check(moves, position, game_board, bw, rec):
             game_board[position[0], position[1]].get_content()
         )
         game_board[position[0], position[1]].add_content()
+
         # Check for check and delete move if still check
         if check(game_board, bw, rec):
             new_m.remove(m)
+
         # Move piece back
         game_board[position[0], position[1]].add_content(
             game_board[target_square[0], target_square[1]].get_content()
@@ -300,10 +302,17 @@ def check(game_board, bw, recursion=True):
 
 
 def castling(game_board, castle, move, piece):
+    """
+    Checks if we can castle and add move if we can
+    :param game_board: array of board
+    :param castle: castle-string
+    :param move: list of moves
+    :param piece: piece to move (King)
+    :return: updated list of moves
+    """
     m = move
     if piece.isupper():
         if "K" in castle:
-            # Check if no piece is between king and rook
             if (
                     game_board[7, 5].get_content() is None
                     and
