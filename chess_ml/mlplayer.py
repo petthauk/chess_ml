@@ -1,8 +1,6 @@
-import time
-
 from chess_ml import perceptron
 from board import chess_logic
-from chess_ml import util
+import util.util as util
 from tqdm import tqdm
 
 
@@ -18,20 +16,28 @@ class MlPlayer:
     def get_color(self):
         """
         Returns color
-        :return:
+        :return: self.color (String)
         """
         return self.color
 
-    def move(self):
+    def move(self, show_moves=False):
+        """
+        Gets prediction for each move from current position and chooses one of those moves.
+        :param show_moves: Boolean to say if we should see all moves that is considered. Default is False.
+        :return: A tuple containing square to move from a square to move to
+        """
+        # If perceptron isn't initialized, initialize it.
         if self.perceptron is None:
             fen = self.board.get_fen()
             self.perceptron = perceptron.Perceptron(fen, "data/weights.npy")
 
+        # A list which will contain all possible moves with predictions for them.
         move_predictions = []
 
         # Predict win-rate for current position and put in move_predictions
         # Get current fen-data
         old_fen = self.board.get_fen()
+
         # Get data
         data = util.get_data(old_fen)
         if data[-1] != 1 or self.color != "w":
@@ -46,6 +52,10 @@ class MlPlayer:
         # Go through every square and predict moves from it
         for i in range(8):
             for j in range(8):
+                # Set square to move from
+                fr = [i, j]
+
+                # Get legal moves from current square
                 moves = chess_logic.legal_moves(
                     self.board.get_board_array(),
                     [i, j],
@@ -53,30 +63,42 @@ class MlPlayer:
                     self.board.get_castle(),
                     self.board.get_en_passent()
                 )
+
+                # Go through every move
                 for m in moves:
                     if m != [0, 0]:
-                        fr = [i, j]
+                        # Set square to move to
                         to = [fr[0]+m[0], fr[1]+m[1]]
+
                         # Move piece
-                        piece = self.board.get_board_array()[to[0], to[1]].get_content()
                         self.board.move_piece(fr, to)
+
                         # Update fen
                         self.board.new_fen()
-                        show_pr = False
-                        if show_pr:
+
+                        # If we want to see all moves predicted
+                        if show_moves:
                             self.board.set_fen(self.board.get_fen())
                             self.board.board_array = self.board.set_board_array()
                             self.board.add_pieces()
                             self.board.update_board()
+
                         # Get fen and predict
                         fen = self.board.get_fen()
                         data = util.get_data(fen)
                         p, activations = self.perceptron.predict(data)
+
+                        # If it is blacks turn to move. Flip prediction.
+                        # Black wants to be as close to 0.0 as possible.
                         if self.color == "b":
                             p = 1 - p
+
+                        # Add activations, prediction and move to list of moves
                         move_predictions.append([[a for a in activations], p, [fr, to]])
-                        # Update fen
+
+                        # Set fen to old fen for predicting new move or 
                         self.board.set_fen(old_fen)
+
                         # Add pieces from old fen to get current board
                         self.board.board_array = self.board.set_board_array()
                         self.board.add_pieces()

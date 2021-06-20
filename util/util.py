@@ -11,8 +11,31 @@ QUEEN = 5
 KING = 6
 piece_dict = {"p": PAWN, "n": KNIGHT, "b": BISHOP, "r": ROOK, "q": QUEEN, "k": KING}
 
+# For use with converting between string-position (e.g. "a5") and array-position
+letter_list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+
 
 def add_piece_to_list(piece):
+    """
+    Adds piece to list of data
+    Return-list is structured like this:
+    [
+        black pawn,
+        white pawn,
+        black knight,
+        white knight,
+        black bishop,
+        white bishop,
+        black rook,
+        white rook,
+        black queen,
+        white queen,
+        black king,
+        white king
+    ]
+    :param piece: Character of piece from fen
+    :return: List of pieces for current square
+    """
     piece_list = [0 for _ in range(12)]
     if piece.islower():
         piece_list[(piece_dict[piece.lower()] - 1) * 2] = 1
@@ -43,23 +66,6 @@ def fen_to_list(fen):
             pass
 
     return value_list
-
-
-def string_pos_to_number(pos):
-    """
-    Converts string-pos to number
-    :param pos: Position as string
-    :return: Position as number on board
-    """
-    if pos == "-":
-        return 0
-    col = 8-int(pos[1])
-    row = 0
-    num_string = [c for c in ["a", "b", "c", "d", "e", "f", "g", "h"]]
-    for i in range(8):
-        if pos[0] == num_string[i]:
-            row = i
-    return row + (col*8) + 1
 
 
 def move_from_to(pos, move):
@@ -158,8 +164,8 @@ def get_promote_data(fen, piece):
 def get_weights(file, layer_sizes=None):
     """
     Get weights from json-file. Makes new weights if file doesn't exist or is empty
-    :param layer_sizes:
-    :param file: json-file
+    :param layer_sizes: Layer sizes if weights is not initialized. Default is None (for testing)
+    :param file: json-file (String)
     :return: list of weights
     """
     # For testing
@@ -267,6 +273,11 @@ def decide_from_predictions(predictions):
 
 
 def update_game_log(result):
+    """
+    Updates game-log "data/results.json"
+    :param result: Result of game "w" if white wins, "b" if black wins and "d" if draw
+    :return:
+    """
     try:
         with open("data/result.json", "r") as f:
             try:
@@ -287,3 +298,29 @@ def update_game_log(result):
     with open("data/result.json", "w") as f:
         f.write(j)
 
+
+def string_position_to_array_position(string_pos):
+    """
+    Converts string-position (e.g. "a4") to position on board-array
+    :param string_pos: Position as string
+    :return: Position as list of position in array [row, col]
+    """
+    try:
+        for i in range(len(letter_list)):
+            if string_pos != "":
+                if string_pos[0] == letter_list[i]:
+                    return [8-int(string_pos[1]), i]
+    except ValueError:
+        return None
+
+
+def array_position_to_string_position(array_pos):
+    """
+    Converts position on board-array to string-position (e.g. "a4")
+    :param array_pos: Position as list of position in array [row, col]
+    :return: String-position (e.g. "a4")
+    """
+    string_pos = ""
+    string_pos += letter_list[array_pos[1]]
+    string_pos += str(8 - array_pos[0])
+    return string_pos
