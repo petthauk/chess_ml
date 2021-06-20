@@ -68,23 +68,6 @@ def fen_to_list(fen):
     return value_list
 
 
-def string_pos_to_number(pos):
-    """
-    Converts string-pos to number
-    :param pos: Position as string
-    :return: Position as number on board
-    """
-    if pos == "-":
-        return 0
-    col = 8-int(pos[1])
-    row = 0
-    num_string = [c for c in ["a", "b", "c", "d", "e", "f", "g", "h"]]
-    for i in range(8):
-        if pos[0] == num_string[i]:
-            row = i
-    return row + (col*8) + 1
-
-
 def move_from_to(pos, move):
     """
     Returns a list with from-position and to-position

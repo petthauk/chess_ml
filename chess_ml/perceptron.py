@@ -4,6 +4,11 @@ import math
 
 
 def sigmoid(x):
+    """
+    Logistic function for perceptron
+    :param x: value to pass through logistic function
+    :return: Float between 0.0 and 1.0
+    """
     try:
         return 1 / (1 + math.exp(-x))
     except OverflowError:
@@ -17,10 +22,13 @@ class Perceptron:
         self.fen = fen
         self.weights = []
         self.init_weights(file)
-        # Update weights in accordance to start position
 
     def init_weights(self, file):
-        ret = None
+        """
+        Gets weights when perceptron is initialized. Updates self.weights
+        :param file: File to get weights from
+        :return:
+        """
         if file == "data/weights.npy":
             length = len(util.get_data(self.fen))
             ret = util.get_weights(
@@ -48,6 +56,8 @@ class Perceptron:
             )
             for w in ret:
                 self.weights.append(w)
+        else:
+            raise Exception("Filename should either be \"data/weights.npy\" or \"data/promote_weights.npy\"")
 
     def predict(self, data):
         """
@@ -76,6 +86,14 @@ class Perceptron:
         return output, activations
 
     def back_prop(self, data, predict, target, eta=0.1):
+        """
+        Backpropagation for perceptron. Updates weights.
+        :param data: old weights and activations
+        :param predict: Predicted value
+        :param target: Target value
+        :param eta: Learning Rate
+        :return: new weights
+        """
         ret_weights = []
         full_data = data.copy()
         full_data.append([predict])

@@ -175,7 +175,7 @@ def main():
         move_perceptron = Perceptron(b.get_fen(), "data/weights.npy")
         promote_perceptron = Perceptron(b.get_fen(), "data/promote_weights.npy")
         run(b, move_perceptron, promote_perceptron, players=[
-            mlplayer.MlPlayer("h", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
+            mlplayer.MlPlayer("w", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
             mlplayer.MlPlayer("b", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron)
         ])
 
