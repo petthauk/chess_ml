@@ -104,19 +104,21 @@ def run(b, move_perceptron, promote_perceptron, players):
 
     status = game_outcome_dict[b.get_status()]
     if players[0].get_color() == "w":
-        print("\nWhite")
+        print("\nLearning positions")
         pos = players[0].learn_pos(status)
         prom = players[0].learn_prom(status)
         for wl in pos:
             weight_list.append(wl)
+        print("\nLearning from white promotions")
         for pl in prom:
             promote_list.append(pl)
     if players[1].get_color() == "b":
-        print("\nBlack")
         if players[0].get_color() == "h":
+            print("\nLearning positions")
             pos = players[1].learn_pos(status)
             for wl in pos:
                 weight_list.append(wl)
+        print("\nLearning from black promotions")
         prom = players[1].learn_prom(status)
         for pl in prom:
             promote_list.append(pl)
@@ -141,7 +143,7 @@ def run(b, move_perceptron, promote_perceptron, players):
     util.save_weights(np.array(new_weights, dtype=object), "data/weights.npy")
     print()
 
-    print("Updating promote weights")
+    print("\nUpdating promote weights")
     # Find mean of all promote-weights and save new weights
     if len(promote_list) > 0:
         new_promote = [
