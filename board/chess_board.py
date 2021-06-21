@@ -95,7 +95,7 @@ class Board:
         :param status: "w" if white wins, "b" if black wins, "d" if draw
         :return:
         """
-        if status in ["w", "b", "d"]:
+        if status in ["w", "b", "d", "-"]:
             self.status = status
         else:
             raise ValueError("Status of game can only be \"w\", \"b\" or \"d\", you tried to set status "+status)
@@ -250,6 +250,8 @@ class Board:
             pg.display.set_caption("Chess - Black wins!!!!")
         if self.status == "d":
             pg.display.set_caption("Chess - Draw!!!!")
+        if self.status == "-":
+            pg.display.set_caption("Chess")
         pg.display.update()
 
     def draw_board(self):
@@ -459,8 +461,6 @@ class Board:
         # Check for win, lose or draw
         self.win_lose_draw()
         self.update_board()
-        print(self)
-        print(self.get_fen())
         if self.status == "w":
             print("White has won")
         elif self.status == "b":
@@ -514,7 +514,7 @@ class Board:
                 self.set_status("w")  # Black is check-mate, white has won
         if self.half_move == 100:
             self.set_status("d")
-        if self.positions_in_game[self.get_fen_pos()] == 3:
+        if self.positions_in_game[self.get_fen_pos()] >= 3:
             self.set_status("d")
 
     def promote_pawn(self, to, t=""):

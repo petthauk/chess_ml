@@ -70,12 +70,13 @@ def run(b, move_perceptron, promote_perceptron, players):
                                 pass
 
                 elif b.get_bw() == "w" and players[0].get_color() == "w":
-                    move_from, move_to = players[0].move()
+                    move_from, move_to = players[0].move_min_max()
                     b.move_piece(move_from, move_to)
                     print("Move from {} to {}".format(
                         util.array_position_to_string_position(move_from),
                         util.array_position_to_string_position(move_to)
                     ))
+                    print(b)
                     if b.get_promoting():
                         promote = players[0].promote_pawn()
                         b.promote_pawn(move_to, promote)
@@ -83,12 +84,13 @@ def run(b, move_perceptron, promote_perceptron, players):
                     if len(pg.event.get()) < 2:
                         pg.event.post(pg.event.Event(MOUSEMOTION))
                 elif b.get_bw() == "b" and players[1].get_color() == "b":
-                    move_from, move_to = players[1].move()
+                    move_from, move_to = players[1].move_min_max()
                     b.move_piece(move_from, move_to)
                     print("Move from {} to {}".format(
                         util.array_position_to_string_position(move_from),
                         util.array_position_to_string_position(move_to)
                     ))
+                    print(b)
                     if b.get_promoting():
                         promote = players[1].promote_pawn()
                         b.promote_pawn(move_to, promote)
@@ -102,67 +104,68 @@ def run(b, move_perceptron, promote_perceptron, players):
                 # Update game_log
                 util.update_game_log(b.get_status())
 
-    status = game_outcome_dict[b.get_status()]
-    if players[0].get_color() == "w":
-        print("\nLearning positions")
-        pos = players[0].learn_pos(status)
-        prom = players[0].learn_prom(status)
-        for wl in pos:
-            weight_list.append(wl)
-        print("\nLearning from white promotions")
-        for pl in prom:
-            promote_list.append(pl)
-    if players[1].get_color() == "b":
-        if players[0].get_color() == "h":
+    if 1 == 0:
+        status = game_outcome_dict[b.get_status()]
+        if players[0].get_color() == "w":
             print("\nLearning positions")
-            pos = players[1].learn_pos(status)
+            pos = players[0].learn_pos(status)
+            prom = players[0].learn_prom(status)
             for wl in pos:
                 weight_list.append(wl)
-        print("\nLearning from black promotions")
-        prom = players[1].learn_prom(status)
-        for pl in prom:
-            promote_list.append(pl)
+            print("\nLearning from white promotions")
+            for pl in prom:
+                promote_list.append(pl)
+        if players[1].get_color() == "b":
+            if players[0].get_color() == "h":
+                print("\nLearning positions")
+                pos = players[1].learn_pos(status)
+                for wl in pos:
+                    weight_list.append(wl)
+            print("\nLearning from black promotions")
+            prom = players[1].learn_prom(status)
+            for pl in prom:
+                promote_list.append(pl)
 
-    print("\nUpdating weights")
-    # Find mean of all weights and save new weights
-    new_weights = [
-        np.zeros(weight_list[0][i].shape) for i in range(len(weight_list[0]))
-    ]
-    old_weights = move_perceptron.weights
-    for a in range(len(weight_list[0])):
-        for i in range(weight_list[0][a].shape[0]):
-            for j in range(weight_list[0][a].shape[1]):
-                tot = 0.0
-                num_of_weights = 0
-                for k in range(len(weight_list)):
-                    if weight_list[k][a][i][j] != old_weights[a][i][j]:
-                        tot += weight_list[k][a][i][j]
-                        num_of_weights += 1
-                if num_of_weights != 0:
-                    new_weights[a][i][j] = tot / num_of_weights
-    util.save_weights(np.array(new_weights, dtype=object), "data/weights.npy")
-    print()
-
-    print("\nUpdating promote weights")
-    # Find mean of all promote-weights and save new weights
-    if len(promote_list) > 0:
-        new_promote = [
-            np.zeros(promote_list[0][i].shape) for i in range(len(promote_list[0]))
+        print("\nUpdating weights")
+        # Find mean of all weights and save new weights
+        new_weights = [
+            np.zeros(weight_list[0][i].shape) for i in range(len(weight_list[0]))
         ]
-        old_promote = promote_perceptron.weights
-        for a in range(len(promote_list[0])):
-            for i in range(promote_list[0][a].shape[0]):
-                for j in range(promote_list[0][a].shape[1]):
+        old_weights = move_perceptron.weights
+        for a in range(len(weight_list[0])):
+            for i in range(weight_list[0][a].shape[0]):
+                for j in range(weight_list[0][a].shape[1]):
                     tot = 0.0
-                    num_of_promote = 0
-                    for k in range(len(promote_list)):
-                        if promote_list[k][a][i][j] != old_promote[a][i][j]:
-                            tot += promote_list[k][a][i][j]
-                            num_of_promote += 1
-                    if num_of_promote != 0:
-                        new_promote[a][i][j] = tot / num_of_promote
-        util.save_weights(np.array(new_promote, dtype=object), "data/promote_weights.npy")
-    print()
+                    num_of_weights = 0
+                    for k in range(len(weight_list)):
+                        if weight_list[k][a][i][j] != old_weights[a][i][j]:
+                            tot += weight_list[k][a][i][j]
+                            num_of_weights += 1
+                    if num_of_weights != 0:
+                        new_weights[a][i][j] = tot / num_of_weights
+        util.save_weights(np.array(new_weights, dtype=object), "data/weights.npy")
+        print()
+
+        print("\nUpdating promote weights")
+        # Find mean of all promote-weights and save new weights
+        if len(promote_list) > 0:
+            new_promote = [
+                np.zeros(promote_list[0][i].shape) for i in range(len(promote_list[0]))
+            ]
+            old_promote = promote_perceptron.weights
+            for a in range(len(promote_list[0])):
+                for i in range(promote_list[0][a].shape[0]):
+                    for j in range(promote_list[0][a].shape[1]):
+                        tot = 0.0
+                        num_of_promote = 0
+                        for k in range(len(promote_list)):
+                            if promote_list[k][a][i][j] != old_promote[a][i][j]:
+                                tot += promote_list[k][a][i][j]
+                                num_of_promote += 1
+                        if num_of_promote != 0:
+                            new_promote[a][i][j] = tot / num_of_promote
+            util.save_weights(np.array(new_promote, dtype=object), "data/promote_weights.npy")
+        print()
 
 
 def main():
