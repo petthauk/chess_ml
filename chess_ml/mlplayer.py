@@ -1,6 +1,7 @@
+import copy
 import sys
 
-from chess_ml import perceptron
+from chess_ml import perceptron, position_nodes
 from board import chess_logic
 import util.util as util
 from tqdm import tqdm
@@ -135,271 +136,166 @@ class MlPlayer:
 
     def move_min_max(self):
         fen = self.board.get_fen()
+        if self.perceptron is None:
+            self.perceptron = perceptron.Perceptron(fen, "data/weights.npy")
         data = util.get_data(fen)
-        p, activations = self.perceptron.predict(data)
-        prediction = self.min_max(p, 0)
+        p, a = self.perceptron.predict(data)
+        root = position_nodes.Node(p, a, fen)
+        self.BFS(root, time.time())
+        if self.color == "w":
+            move_node = self.minimax(root, -0.1, 1.1, True)
+        else:
+            move_node = self.minimax(root, 1.1, -0.1, False)
 
-        print("Saving weights")
-        util.save_weights(
-            np.array(self.perceptron.weights, dtype=object),
-            "data/weights.npy"
-        )
-        util.save_weights(
-            np.array(self.promote_perceptron.weights, dtype=object),
-            "data/promote_weights.npy"
-        )
+        self.board.set_status("-")
+        self.board.set_fen(root.get_fen())
+        self.board.board_array = self.board.set_board_array()
+        self.board.add_pieces()
 
-        print("\nChoosing move with prediction: {}\n".format(prediction[1]))
-        return prediction[2][0], prediction[2][1]
+        self.board.move_piece(move_node.get_move()[0], move_node.get_move()[1])
+        self.board.new_fen()
 
-    def min_max(self, current_prediction, depth):
+        fen = self.board.get_fen()
+        data = util.get_data(fen)
+        p, a = self.perceptron.predict(data)
+
+        if p - move_node.get_prediction() != 0.0:
+            print("Predicted value: {}".format(p))
+            print("Target value:    {}".format(move_node.get_prediction()))
+            self.perceptron.weights = self.perceptron.back_prop(
+                a,
+                p,
+                move_node.get_prediction()
+            )
+
+            print("Saving weights")
+            util.save_weights(
+                np.array(self.perceptron.weights, dtype=object),
+                "data/weights.npy"
+            )
+            util.save_weights(
+                np.array(self.promote_perceptron.weights, dtype=object),
+                "data/promote_weights.npy"
+            )
+
+        self.board.set_status("-")
+        self.board.set_fen(root.get_fen())
+        self.board.board_array = self.board.set_board_array()
+        self.board.add_pieces()
+
+        print("\nChoosing move with prediction: {}\n".format(move_node.get_prediction()))
+        return move_node.get_move()
+
+    def BFS(self, root, tic):
         """
-        Choose move based on depth-first search and min max.
-        Recursive function
+        Breadth first search to get tree of positions
         :return:
         """
-        print("Depth: {}".format(depth))
-        # If perceptron isn't initialized, initialize it.
-        if self.perceptron is None:
-            fen = self.board.get_fen()
-            self.perceptron = perceptron.Perceptron(fen, "data/weights.npy")
+        node_list = [root]
+        while len(node_list) > 0:
+            node = node_list.pop(0)
+            self.board.set_fen(node.get_fen())
+            self.board.board_array = self.board.set_board_array()
+            self.board.add_pieces()
+            self.board.win_lose_draw()
+            if self.board.get_status() in ["w", "b", "d"]:
+                continue
+            toc = time.time()
+            if toc - tic > 120.0:
+                return
 
-        # Get old fen for resetting board when finished
-        old_fen = self.board.get_fen()
+            move_list = []
+            for row in range(8):
+                for col in range(8):
+                    fr = [row, col]
+                    moves = chess_logic.legal_moves(
+                        self.board.get_board_array(),
+                        fr,
+                        self.board.get_bw(),
+                        self.board.get_castle(),
+                        self.board.get_en_passent()
+                    )
 
-        move_list = []
-        move_predictions = []
-        finished_game_dict = {"w": 1.0, "b": 0.0, "d": 0.5}
-
-        # Go through each square to get move from it
-        for row in range(8):
-            for col in range(8):
-                # Square to move from
-                fr = [row, col]
-
-                # Get legal moves from current square
-                moves = chess_logic.legal_moves(
-                    self.board.get_board_array(),
-                    fr,
-                    self.board.get_bw(),
-                    self.board.get_castle(),
-                    self.board.get_en_passent()
-                )
-
-                # Go through each move
-                for m in moves:
-                    if m != [0, 0]:
-                        # Set square to move to
+                    for m in moves:
                         to = [fr[0] + m[0], fr[1] + m[1]]
 
                         # Move piece
                         self.board.move_piece(fr, to)
 
-                        # Next turn for further prediction
-                        self.board.new_fen()
-
-                        data = util.get_data(self.board.get_fen())
-                        p, activations = self.perceptron.predict(data)
-
-                        move_list.append([[a for a in activations], p, [fr, to]])
-
-                        # Reset board for next move
-                        # Set fen to old fen for predicting new move
-                        self.board.set_fen(old_fen)
-                        self.board.set_status("-")
+                        # Update fen
+                        self.board.next_turn()
 
                         self.board.board_array = self.board.set_board_array()
                         self.board.add_pieces()
 
-        if self.board.get_bw() == "w":
-            move_list.sort(key=sort_func, reverse=True)
-        elif self.board.get_bw() == "b":
-            move_list.sort(key=sort_func)
+                        # Get fen and predict
+                        fen = self.board.get_fen()
+                        data = util.get_data(fen)
+                        p, a = self.perceptron.predict(data)
 
-        for m in move_list:
-            fr = m[2][0]
-            to = m[2][1]
-            activations = m[0]
-            p = m[1]
+                        if self.board.get_status() in ["w", "b", "d"]:
+                            finished_dict = {"w": 1.0, "b": 0.0, "d": 0.5}
+                            p = finished_dict[self.board.get_status()]
 
-            if depth > 60:
-                self.board.positions_in_game[self.board.get_fen_pos()] -= 1
-
-                # Reset board for next move
-                # Set fen to old fen for predicting new move
-                self.board.set_fen(old_fen)
-                self.board.set_status("-")
-
-                # Add pieces from old fen to get current board
-                self.board.board_array = self.board.set_board_array()
-                self.board.add_pieces()
-                self.board.update_board()
-
-                move_predictions.append([[a for a in activations], p, [fr, to]])
-                continue
-
-            # Move piece
-            self.board.move_piece(fr, to)
-
-            # Promote if necessary
-            if self.board.get_promoting():
-                if self.promote_perceptron is None:
-                    self.promote_perceptron = perceptron.Perceptron(old_fen, "data/promote_weights.npy")
-                promote_list = []
-                for piece in ["n", "b", "r", "q"]:
-                    promote_data = util.get_promote_data(old_fen, piece)
-                    p, activations = self.promote_perceptron.predict(promote_data)
-                    promote_list.append([[a for a in activations], p, piece])
-
-                if self.board.get_bw() == "w":
-                    promote_list.sort(key=sort_func, reverse=True)
-                elif self.board.get_bw() == "b":
-                    promote_list.sort(key=sort_func)
-                for p in promote_list:
-                    self.board.promote_pawn(to, p[2])
-
-                    # Next turn for further prediction
-                    self.board.next_turn()
-
-                    # Check if game is finished
-                    status = self.board.get_status()
-                    if status in ["w", "b", "d"]:  # Game finished
-                        self.promote_perceptron.weights = self.promote_perceptron.back_prop(
-                            p[0],
-                            p[1],
-                            finished_game_dict[self.board.get_status()],
-                            eta=0.1
-                        )
-
-                        self.board.positions_in_game[self.board.get_fen_pos()] -= 1
+                        move_list.append([[fr, to], p, a, fen])
 
                         self.board.set_status("-")
-                        return [[a for a in activations], finished_game_dict[status], [fr, to]]
+                        self.board.positions_in_game[self.board.get_fen_pos()] -= 1
+                        self.board.set_fen(node.get_fen())
+                        self.board.board_array = self.board.set_board_array()
+                        self.board.add_pieces()
 
-                    prediction = self.min_max(current_prediction, depth + 1)
-                    move_predictions.append([prediction[0], prediction[1], [fr, to]])
-
-                    if ((self.color == "w" and prediction[1] > current_prediction) or
-                            (self.color == "b" and prediction[1] < current_prediction)):
-                        break
-
-                    if ((self.color == "w" and prediction[1] == 1.0) or
-                            (self.color == "b" and prediction[1] == 0.0)):
-                        break
-
-            else:
-                # Next turn for further prediction
-                self.board.next_turn()
-
-                # Check if game is finished
-                status = self.board.get_status()
-                if status in ["w", "b", "d"]:  # Game finished
-                    print("Learning depth {}".format(depth))
-                    self.perceptron.weights = self.perceptron.back_prop(
-                        activations,
-                        p,
-                        finished_game_dict[self.board.get_status()],
-                        eta=0.1
-                    )
-
-                    self.board.positions_in_game[self.board.get_fen_pos()] -= 1
-
-                    # Reset board for next move
-                    # Set fen to old fen for predicting new move
-                    self.board.set_fen(old_fen)
-
-                    # Add pieces from old fen to get current board
-                    self.board.board_array = self.board.set_board_array()
-                    self.board.add_pieces()
-                    self.board.update_board()
-
-                    self.board.set_status("-")
-                    return [[a for a in activations], finished_game_dict[status], [fr, to]]
-
-                print("Prediction: {:.2f}".format(p))
-                prediction = self.min_max(current_prediction, depth + 1)
-                move_predictions.append([prediction[0], prediction[1], [fr, to]])
-
-                if ((self.color == "w" and prediction[1] > current_prediction) or
-                        (self.color == "b" and prediction[1] < current_prediction)):
-                    print("Going back to depth {}".format(depth - 1))
-                    fen = self.board.get_fen()
-                    data = util.get_data(fen)
-                    p, activations = self.perceptron.predict(data)
-                    self.perceptron.weights = self.perceptron.back_prop(
-                        activations,
-                        p,
-                        prediction[1],
-                        eta=0.1
-                    )
-
-                    self.board.positions_in_game[self.board.get_fen_pos()] -= 1
-
-                    # Reset board for next move
-                    # Set fen to old fen for predicting new move
-                    self.board.set_fen(old_fen)
-
-                    # Add pieces from old fen to get current board
-                    self.board.board_array = self.board.set_board_array()
-                    self.board.add_pieces()
-                    self.board.update_board()
-
-                    self.board.set_status("-")
-                    return [prediction[0], prediction[1], [fr, to]]
-
-                if ((self.color == "w" and prediction[1] == 1.0) or
-                        (self.color == "b" and prediction[1] == 0.0)):
-                    return [prediction[0], prediction[1], [fr, to]]
-
-            # Reset board for next move
-            # Set fen to old fen for predicting new move
-            self.board.set_fen(old_fen)
-            self.board.set_status("-")
-
-            # Add pieces from old fen to get current board
-            self.board.board_array = self.board.set_board_array()
-            self.board.add_pieces()
-            self.board.update_board()
-
-        max_prediction = move_predictions[0]
-        for prediction in move_predictions:
             if self.board.get_bw() == "w":
-                if prediction[1] > max_prediction[1]:
-                    max_prediction = prediction
+                move_list.sort(key=sort_func, reverse=True)
             elif self.board.get_bw() == "b":
-                if prediction[1] < max_prediction[1]:
-                    max_prediction = prediction
+                move_list.sort(key=sort_func)
 
-        # Learning
-        print("Learning depth {}".format(depth))
-        fen = self.board.get_fen()
-        data = util.get_data(fen)
-        p, activations = self.perceptron.predict(data)
-        status = self.board.get_status()
-        if status == "-":
-            target = max_prediction[1]
-        elif status in ["w", "b", "d"]:
-            target = finished_game_dict[status]
-        self.perceptron.weights = self.perceptron.back_prop(
-            activations,
-            p,
-            target,
-            eta=0.1
-        )
+            for m in move_list:
+                fr = m[0][0]
+                to = m[0][1]
+                p = m[1]
+                a = m[2]
+                fen = m[3]
 
-        self.board.positions_in_game[self.board.get_fen_pos()] -= 1
+                child = position_nodes.Node(p, a, fen)
+                node.add_child(child, [fr, to], self.board.get_bw())
+                node_list.append(child)
 
-        # Reset board for next move
-        # Set fen to old fen for predicting new move
-        self.board.set_fen(old_fen)
-        self.board.set_status("-")
+    def minimax(self, position, alpha, beta, maximizing_player):
+        """
+        Minimax-algorithm with alpha-beta pruning
+        :return:
+        """
+        if len(position.get_children()) == 0:
+            return position
 
-        # Add pieces from old fen to get current board
-        self.board.board_array = self.board.set_board_array()
-        self.board.add_pieces()
-        self.board.update_board()
+        ret_pos = position
 
-        return max_prediction
+        if maximizing_player:
+            max_eval = -0.1
+            for child in position.get_children():
+                pos = self.minimax(child, alpha, beta, False)
+                eval = pos.get_prediction()
+                if eval >= max_eval:
+                    max_eval = eval
+                    ret_pos = child
+                    ret_pos.set_prediction(eval)
+                alpha2 = max(alpha, eval)
+                if beta <= alpha2:
+                    break
+        else:
+            min_eval = 1.1
+            for child in position.get_children():
+                pos = self.minimax(child, alpha, beta, True)
+                eval = pos.get_prediction()
+                if eval <= min_eval:
+                    min_eval = eval
+                    ret_pos = child
+                    ret_pos.set_prediction(eval)
+                beta2 = min(beta, eval)
+                if beta2 <= alpha:
+                    break
+        return ret_pos
 
     def promote_pawn(self):
         fen = self.board.get_fen()

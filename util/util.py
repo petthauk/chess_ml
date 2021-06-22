@@ -241,7 +241,6 @@ def decide_from_predictions(predictions):
         raise Exception("No predictions to decide from!!!!!!")
     # Return if only one prediction
     if len(predictions) == 1:
-        print("Only one possible move")
         return predictions[0]
 
     # Get the best two moves
@@ -266,9 +265,7 @@ def decide_from_predictions(predictions):
 
     # If similar (less than 0.001 in prediction apart), do roulette-wheel
     if abs(best_moves[0][1] - best_moves[1][1]) < 0.001:
-        print("Using roulette-wheel to get move")
         return roulette_wheel(predictions)
-    print("Choosing best move")
     return best_moves[0]
 
 

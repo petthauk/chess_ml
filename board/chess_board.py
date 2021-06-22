@@ -48,6 +48,9 @@ def set_visual_piece(t):
     return img
 
 
+
+
+
 class Board:
     """
     Chess-board class
@@ -252,6 +255,15 @@ class Board:
             pg.display.set_caption("Chess - Draw!!!!")
         if self.status == "-":
             pg.display.set_caption("Chess")
+        pg.display.update()
+
+    def update_display(self, text):
+        print(text)
+        self.screen.fill((0, 0, 0))
+        self.draw_board()
+        self.add_pieces()
+        self.draw_pieces()
+        pg.display.set_caption(text)
         pg.display.update()
 
     def draw_board(self):

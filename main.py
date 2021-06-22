@@ -77,6 +77,7 @@ def run(b, move_perceptron, promote_perceptron, players):
                         util.array_position_to_string_position(move_to)
                     ))
                     print(b)
+                    print("Black to move!!!")
                     if b.get_promoting():
                         promote = players[0].promote_pawn()
                         b.promote_pawn(move_to, promote)
@@ -91,6 +92,7 @@ def run(b, move_perceptron, promote_perceptron, players):
                         util.array_position_to_string_position(move_to)
                     ))
                     print(b)
+                    print("White to move!!!")
                     if b.get_promoting():
                         promote = players[1].promote_pawn()
                         b.promote_pawn(move_to, promote)
@@ -103,6 +105,9 @@ def run(b, move_perceptron, promote_perceptron, players):
                 pg.event.post(pg.event.Event(QUIT))
                 # Update game_log
                 util.update_game_log(b.get_status())
+                pg.quit()
+                main_loop = False
+                break
 
     if 1 == 0:
         status = game_outcome_dict[b.get_status()]
