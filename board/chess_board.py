@@ -48,9 +48,6 @@ def set_visual_piece(t):
     return img
 
 
-
-
-
 class Board:
     """
     Chess-board class
@@ -109,6 +106,13 @@ class Board:
         :return: "-" if game continues, "w" if white has won, "b" if black has won, "d" if draw
         """
         return self.status
+
+    def get_full_move(self):
+        """
+        Gets full-move
+        :return: self.full_move
+        """
+        return self.full_move
 
     def set_fen(self, fen):
         """
@@ -459,7 +463,7 @@ class Board:
             if human:
                 self.promote_pawn(to)
 
-    def next_turn(self):
+    def next_turn(self, visual=True):
         """
         Setting up next turn
         :return:
@@ -472,7 +476,8 @@ class Board:
 
         # Check for win, lose or draw
         self.win_lose_draw()
-        self.update_board()
+        if visual:
+            self.update_board()
         if self.status == "w":
             print("White has won")
         elif self.status == "b":
@@ -511,6 +516,7 @@ class Board:
                         legal_moves = True
 
         # Sets status
+        self.set_status("-")
         if not white_king_present:
             self.set_status("b")  # Black has won
         if not black_king_present:

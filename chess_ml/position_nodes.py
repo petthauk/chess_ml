@@ -6,7 +6,7 @@ def sort_children_func(e):
 
 
 class Node:
-    def __init__(self, prediction, activation, fen):
+    def __init__(self, prediction, activation, fen, bw, promote, sort_prediction):
         self.prediction = prediction
         self.activation = activation
         self.fen = fen
@@ -14,6 +14,15 @@ class Node:
         self.visited = False
         self.fr = None
         self.to = None
+        self.bw = bw
+        self.promote = promote
+        self.sort_prediction = sort_prediction
+
+    def get_sort_prediction(self):
+        return self.sort_prediction
+
+    def get_promote(self):
+        return self.promote
 
     def set_prediction(self, prediction):
         """
@@ -85,3 +94,6 @@ class Node:
 
     def get_move(self):
         return self.fr, self.to
+
+    def get_bw(self):
+        return self.bw
