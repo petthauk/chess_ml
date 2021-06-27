@@ -95,7 +95,7 @@ class Board:
         :param status: "w" if white wins, "b" if black wins, "d" if draw
         :return:
         """
-        if status in ["w", "b", "d"]:
+        if status in ["w", "b", "d", "-"]:
             self.status = status
         else:
             raise ValueError("Status of game can only be \"w\", \"b\" or \"d\", you tried to set status "+status)
@@ -106,6 +106,13 @@ class Board:
         :return: "-" if game continues, "w" if white has won, "b" if black has won, "d" if draw
         """
         return self.status
+
+    def get_full_move(self):
+        """
+        Gets full-move
+        :return: self.full_move
+        """
+        return self.full_move
 
     def set_fen(self, fen):
         """
@@ -250,6 +257,17 @@ class Board:
             pg.display.set_caption("Chess - Black wins!!!!")
         if self.status == "d":
             pg.display.set_caption("Chess - Draw!!!!")
+        if self.status == "-":
+            pg.display.set_caption("Chess")
+        pg.display.update()
+
+    def update_display(self, text):
+        print(text)
+        self.screen.fill((0, 0, 0))
+        self.draw_board()
+        self.add_pieces()
+        self.draw_pieces()
+        pg.display.set_caption(text)
         pg.display.update()
 
     def draw_board(self):
@@ -445,7 +463,7 @@ class Board:
             if human:
                 self.promote_pawn(to)
 
-    def next_turn(self):
+    def next_turn(self, visual=True):
         """
         Setting up next turn
         :return:
@@ -458,9 +476,8 @@ class Board:
 
         # Check for win, lose or draw
         self.win_lose_draw()
-        self.update_board()
-        print(self)
-        print(self.get_fen())
+        if visual:
+            self.update_board()
         if self.status == "w":
             print("White has won")
         elif self.status == "b":
@@ -499,6 +516,7 @@ class Board:
                         legal_moves = True
 
         # Sets status
+        self.set_status("-")
         if not white_king_present:
             self.set_status("b")  # Black has won
         if not black_king_present:
@@ -514,7 +532,7 @@ class Board:
                 self.set_status("w")  # Black is check-mate, white has won
         if self.half_move == 100:
             self.set_status("d")
-        if self.positions_in_game[self.get_fen_pos()] == 3:
+        if self.positions_in_game[self.get_fen_pos()] >= 3:
             self.set_status("d")
 
     def promote_pawn(self, to, t=""):

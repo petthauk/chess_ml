@@ -16,10 +16,10 @@ def run(b, move_perceptron, promote_perceptron, players):
     :param players: List of two players
     :return:
     """
-    game_outcome_dict = {"w": 1.0, "b": 0.0, "d": 0.5}
-    weight_list = []
-    promote_list = []
+    move_from = []
+    move_to = []
     main_loop = True
+    promote = None
     while main_loop:
         for event in pg.event.get():
             if event.type == QUIT:
@@ -27,10 +27,11 @@ def run(b, move_perceptron, promote_perceptron, players):
                 main_loop = False
                 break
             if b.get_status() == "-":
+                color = b.get_bw()
                 if (
-                        (b.get_bw() == "w" and players[0].get_color() == "h")
+                        (color == "w" and players[0].get_color() == "h")
                         or
-                        (b.get_bw() == "b" and players[1].get_color() == "h")
+                        (color == "b" and players[1].get_color() == "h")
                 ):
                     if event.type == MOUSEBUTTONDOWN:
                         pos = pg.mouse.get_pos()
@@ -42,24 +43,24 @@ def run(b, move_perceptron, promote_perceptron, players):
                     if event.type == KEYDOWN:
                         if event.key == K_r:  # Resign
                             print("Player resigning")
-                            if b.get_bw() == "w":
+                            if color == "w":
                                 print("Black wins")
                                 b.set_status("b")
-                            if b.get_bw() == "b":
+                            if color == "b":
                                 print("White wins")
                                 b.set_status("w")
                         if event.key == K_d:  # Ask for draw
                             print("Player asking for draw")
                             if (
-                                    (b.get_bw() == "w" and players[1].get_color() == "b")
+                                    (color == "w" and players[1].get_color() == "b")
                                     or
-                                    (b.get_bw() == "b" and players[0].get_color() == "w")
+                                    (color == "b" and players[0].get_color() == "w")
                                 ):  # Asking computer for draw
                                 fen = b.get_fen()
                                 data = util.get_data(fen)
                                 perceptron = Perceptron(fen, "data/weights.npy")
                                 win_prob, _ = perceptron.predict(data)
-                                if b.get_bw() == "w":
+                                if color == "w":
                                     win_prob = 1 - win_prob
                                 if win_prob < 0.5:
                                     print("Accepting draw")
@@ -69,100 +70,66 @@ def run(b, move_perceptron, promote_perceptron, players):
                             else:  # Two humans are playing
                                 pass
 
-                elif b.get_bw() == "w" and players[0].get_color() == "w":
-                    move_from, move_to = players[0].move()
-                    b.move_piece(move_from, move_to)
+                else:
+                    if b.get_bw() == "w" and players[0].get_color() == "w":
+                        move_from, move_to, promote = players[0].move_min_max()
+                        b.move_piece(move_from, move_to)
+
+                    elif b.get_bw() == "b" and players[1].get_color() == "b":
+                        move_from, move_to, promote = players[1].move_min_max()
+                        b.move_piece(move_from, move_to)
+
                     print("Move from {} to {}".format(
                         util.array_position_to_string_position(move_from),
                         util.array_position_to_string_position(move_to)
                     ))
-                    if b.get_promoting():
-                        promote = players[0].promote_pawn()
+
+                    if promote is not None:
                         b.promote_pawn(move_to, promote)
+
                     b.next_turn()
+
                     if len(pg.event.get()) < 2:
                         pg.event.post(pg.event.Event(MOUSEMOTION))
-                elif b.get_bw() == "b" and players[1].get_color() == "b":
-                    move_from, move_to = players[1].move()
-                    b.move_piece(move_from, move_to)
-                    print("Move from {} to {}".format(
-                        util.array_position_to_string_position(move_from),
-                        util.array_position_to_string_position(move_to)
-                    ))
-                    if b.get_promoting():
-                        promote = players[1].promote_pawn()
-                        b.promote_pawn(move_to, promote)
-                    b.next_turn()
-                    if len(pg.event.get()) < 2:
-                        pg.event.post(pg.event.Event(MOUSEMOTION))
+
+                    print(b.get_fen())
+                    print()
+                    print(b)
+
+                    if color == "w":
+                        print("Black to move!!!")
+                    elif color == "b":
+                        print("White to move!!!")
+                    else:
+                        raise Exception("Color to move isn't \"w\" or \"b\"")
+
             else:
                 print("Game finished! Trying to learn from it")
+                print("Learning last position")
+                fen = b.get_fen()
+                data = util.get_data(fen)
+                p, a = move_perceptron.predict(data)
+                if b.get_status() == "w":
+                    target_p = 1.0
+                elif b.get_status() == "b":
+                    target_p = 0.0
+                else:
+                    target_p = 0.5
+                move_perceptron.weights = move_perceptron.back_prop(
+                    a,
+                    p,
+                    target_p
+                )
+                print("Saving weights")
+                util.save_weights(move_perceptron.weights, "data/weights.npy")
+
                 pg.event.clear()
                 pg.event.post(pg.event.Event(QUIT))
                 # Update game_log
                 util.update_game_log(b.get_status())
-
-    status = game_outcome_dict[b.get_status()]
-    if players[0].get_color() == "w":
-        print("\nLearning positions")
-        pos = players[0].learn_pos(status)
-        prom = players[0].learn_prom(status)
-        for wl in pos:
-            weight_list.append(wl)
-        print("\nLearning from white promotions")
-        for pl in prom:
-            promote_list.append(pl)
-    if players[1].get_color() == "b":
-        if players[0].get_color() == "h":
-            print("\nLearning positions")
-            pos = players[1].learn_pos(status)
-            for wl in pos:
-                weight_list.append(wl)
-        print("\nLearning from black promotions")
-        prom = players[1].learn_prom(status)
-        for pl in prom:
-            promote_list.append(pl)
-
-    print("\nUpdating weights")
-    # Find mean of all weights and save new weights
-    new_weights = [
-        np.zeros(weight_list[0][i].shape) for i in range(len(weight_list[0]))
-    ]
-    old_weights = move_perceptron.weights
-    for a in range(len(weight_list[0])):
-        for i in range(weight_list[0][a].shape[0]):
-            for j in range(weight_list[0][a].shape[1]):
-                tot = 0.0
-                num_of_weights = 0
-                for k in range(len(weight_list)):
-                    if weight_list[k][a][i][j] != old_weights[a][i][j]:
-                        tot += weight_list[k][a][i][j]
-                        num_of_weights += 1
-                if num_of_weights != 0:
-                    new_weights[a][i][j] = tot / num_of_weights
-    util.save_weights(np.array(new_weights, dtype=object), "data/weights.npy")
-    print()
-
-    print("\nUpdating promote weights")
-    # Find mean of all promote-weights and save new weights
-    if len(promote_list) > 0:
-        new_promote = [
-            np.zeros(promote_list[0][i].shape) for i in range(len(promote_list[0]))
-        ]
-        old_promote = promote_perceptron.weights
-        for a in range(len(promote_list[0])):
-            for i in range(promote_list[0][a].shape[0]):
-                for j in range(promote_list[0][a].shape[1]):
-                    tot = 0.0
-                    num_of_promote = 0
-                    for k in range(len(promote_list)):
-                        if promote_list[k][a][i][j] != old_promote[a][i][j]:
-                            tot += promote_list[k][a][i][j]
-                            num_of_promote += 1
-                    if num_of_promote != 0:
-                        new_promote[a][i][j] = tot / num_of_promote
-        util.save_weights(np.array(new_promote, dtype=object), "data/promote_weights.npy")
-    print()
+                pg.quit()
+                main_loop = False
+                break
 
 
 def main():
