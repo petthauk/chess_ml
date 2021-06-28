@@ -92,7 +92,7 @@ class Board:
     def set_status(self, status):
         """
         Sets status of game. Default is "-"
-        :param status: "w" if white wins, "b" if black wins, "d" if draw
+        :param status: "w" if white wins, "b" if black wins, "d" if draw, "-" if not finished
         :return:
         """
         if status in ["w", "b", "d", "-"]:
@@ -117,11 +117,14 @@ class Board:
     def set_fen(self, fen):
         """
         Set new fen
-        :param fen: fen-string
+        :param fen: (String) fen
         :return:
         """
+        # Set full fen and split fen on " " to the different parameters
         self.fen = fen
         fen_list = self.fen.split(" ")
+
+        # Set the different parameters from the fen-string
         self.fen_pos = fen_list[0]
         self.bw = fen_list[1]
         self.castle = fen_list[2]
@@ -135,14 +138,14 @@ class Board:
     def get_fen(self):
         """
         Returns fen as string
-        :return: fen
+        :return: (String) fen
         """
         return self.fen
 
     def get_fen_pos(self):
         """
-        Returns fen as string
-        :return: fen_string
+        Returns board representation in fen as string
+        :return: (String)
         """
         return self.fen_pos
 
@@ -152,6 +155,8 @@ class Board:
         :return:
         """
         new_fen = ""
+
+        # Set board-representation
         row_num = 0
         for row in self.board_array:
             empty = 0
@@ -169,18 +174,30 @@ class Board:
                 new_fen += "/"
             row_num += 1
         new_fen += " "
+
+        # Set whose turn it is
         if self.get_bw() == "w":
             new_fen += "b"
         elif self.get_bw() == "b":
             new_fen += "w"
         new_fen += " "
+
+        # Set castling-rights
         new_fen += self.castle
         new_fen += " "
+
+        # Set en passent
         new_fen += self.en_passent
         new_fen += " "
+
+        # Set half-move
         new_fen += str(self.half_move)
         new_fen += " "
+
+        # Set full-move
         new_fen += str(self.full_move)
+
+        # Save fen-string to variable
         self.fen = new_fen
 
     def get_bw(self):
@@ -193,14 +210,14 @@ class Board:
     def get_castle(self):
         """
         Returns castle-string
-        :return: String of castling-opportunities
+        :return: (String) castling-opportunities
         """
         return self.castle
 
     def remove_from_castle(self, c):
         """
         Remove castling-rights
-        :param c: What to remove (K, Q, k or q)
+        :param c: What to remove ("K", "Q", "k" or "q")
         :return:
         """
         new_castle = ""
@@ -215,28 +232,29 @@ class Board:
     def get_en_passent(self):
         """
         Returns en-passent
-        :return: String with en-passent info
+        :return: (String) en-passent info
         """
         return self.en_passent
 
     def get_promoting(self):
         """
         Returns if pawn can promote or not
-        :return: boolean. True if pawn can promote
+        :return: (boolean) True if pawn can promote
         """
         return self.promoting
 
     def set_board_array(self):
         """
         Sets board-array
-        :return: board-array
+        :return: (NumPy-array) board-array
         """
+        # Make new board_array with Square-objects
         board_array = np.array(
             [np.array(
                 [self.Square(row, col) for row in range(8)]
             ) for col in range(8)]
         )
-        # Set board-array in each square
+        # Set pointer to board-object in each square
         for x in board_array:
             for sqr in x:
                 sqr.set_board_array(self)
@@ -262,6 +280,11 @@ class Board:
         pg.display.update()
 
     def update_display(self, text):
+        """
+        Updates display with custom text
+        :param text: Text to display in top of window
+        :return:
+        """
         print(text)
         self.screen.fill((0, 0, 0))
         self.draw_board()
@@ -392,7 +415,7 @@ class Board:
 
         # If castling
         to_content = self.board_array[to[0], to[1]].get_content()
-        if "K" in self.castle:
+        if "K" in self.castle:  # White castling on king-side
             if to_content is not None:
                 if to_content.get_type() == "K" and to[1] - 2 == fr[1]:
                     self.board_array[7, 5].add_content(
@@ -400,7 +423,7 @@ class Board:
                     )
                     self.board_array[7, 7].add_content()
                     self.remove_from_castle("K")
-        if "Q" in self.castle:
+        if "Q" in self.castle:  # White castling on queen-side
             if to_content is not None:
                 if to_content.get_type() == "K" and to[1] + 2 == fr[1]:
                     self.board_array[7, 3].add_content(
@@ -408,7 +431,7 @@ class Board:
                     )
                     self.board_array[7, 0].add_content()
                     self.remove_from_castle("Q")
-        if "k" in self.castle:
+        if "k" in self.castle:  # Black castling on king-side
             if to_content is not None:
                 if to_content.get_type() == "k" and to[1] - 2 == fr[1]:
                     self.board_array[0, 5].add_content(
@@ -416,7 +439,7 @@ class Board:
                     )
                     self.board_array[0, 7].add_content()
                     self.remove_from_castle("k")
-        if "q" in self.castle:
+        if "q" in self.castle:  # Black castling on queen-side
             if to_content is not None:
                 if to_content.get_type() == "k" and to[1] + 2 == fr[1]:
                     self.board_array[0, 3].add_content(
@@ -425,7 +448,7 @@ class Board:
                     self.board_array[0, 0].add_content()
                     self.remove_from_castle("q")
 
-        # If king or rook moves from start-pos, remove castle-right
+        # If king or rook moves from start-position, remove castle-right
         if to_content is not None:
             if to_content.get_type() == "K" and fr == [7, 4]:
                 self.remove_from_castle("K")
@@ -454,18 +477,17 @@ class Board:
 
         # Promote pawn?
         self.promoting = False
-        if to[0] == 0 and self.board_array[to[0], to[1]].get_content().get_type() == "P":
+        if (to[0] == 0 or to[0] == 7) and self.board_array[to[0], to[1]].get_content().get_type().lower() == "p":
             self.promoting = True
-            if human:
-                self.promote_pawn(to)
-        if to[0] == 7 and self.board_array[to[0], to[1]].get_content().get_type() == "p":
-            self.promoting = True
+            # If human-player: Promote here.
+            # If computer-player: Promote will happen individually.
             if human:
                 self.promote_pawn(to)
 
     def next_turn(self, visual=True):
         """
         Setting up next turn
+        :param visual: (boolean) if board should be updated. Default is True
         :return:
         """
         self.new_fen()
@@ -516,7 +538,7 @@ class Board:
                         legal_moves = True
 
         # Sets status
-        self.set_status("-")
+        self.set_status("-")  # Resets status before updating
         if not white_king_present:
             self.set_status("b")  # Black has won
         if not black_king_present:
@@ -535,9 +557,10 @@ class Board:
         if self.positions_in_game[self.get_fen_pos()] >= 3:
             self.set_status("d")
 
-    def promote_pawn(self, to, t=""):
+    def promote_pawn(self, to, t="", print_promote=True):
         """
         Promotes pawn
+        :param print_promote: If we should print when promoting
         :param to: Square that the pawn has moved to
         :param t: Which type, default is empty string, which means that a human should choose
         :return:
@@ -557,7 +580,8 @@ b: Bishop
 """
                 )
             if new_type in ["q", "r", "n", "b"]:
-                print("Promoting pawn to "+new_type)
+                if print_promote:
+                    print("Promoting pawn to "+new_type)
                 if to[0] == 0:
                     self.board_array[to[0], to[1]].get_content().set_type(new_type.upper())
                 if to[0] == 7:

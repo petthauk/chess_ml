@@ -99,7 +99,7 @@ class Perceptron:
         full_data.append([predict])
         delta = [(predict - target) * predict * (1 - predict)]
         for lr in range(-1, -len(self.weights)-1, -1):
-            new_weights = np.array([self.weights[lr][i] for i in range(len(self.weights[lr]))])
+            new_weights = np.array([self.weights[lr][i] for i in range(len(self.weights[lr]))], dtype=object)
             current_data = full_data[lr]
             biased_activation = util.add_bias(full_data[lr - 1])
             delta.append([])
@@ -109,19 +109,20 @@ class Perceptron:
                         biased_activation[i] * (1 - biased_activation[i])
                     )
                 if lr == -1:
-                    new_weights[i] = new_weights[i] - eta * delta[0] * current_data[0]
+                    new_weights[i] = new_weights[i] + (eta * delta[0] * current_data[0])
                     delta[abs(lr)][i] += delta[0] * self.weights[lr][i]
                 elif lr != -len(self.weights):
                     delta_times = 0.0
                     for j in range(len(new_weights[i])):
-                        new_weights[i][j] = self.weights[lr][i][j] - eta * delta[abs(lr+1)][j+1] * biased_activation[i]
+                        new_weights[i][j] = self.weights[lr][i][j] + (eta * delta[abs(lr+1)][j+1] * biased_activation[i])
                         delta_times += delta[abs(lr+1)][j+1] * self.weights[lr][i][j]
                     delta[abs(lr)][i] = delta[abs(lr)][i] * delta_times
                 else:
                     if biased_activation[i] != 0:
                         for j in range(len(new_weights[i])):
-                            new_weights[i][j] = self.weights[lr][i][j] - eta \
-                                                * delta[abs(lr+1)][j+1] * biased_activation[i]
+                            new_weights[i][j] = self.weights[lr][i][j] + (eta
+                                                                          * delta[abs(lr+1)][j+1]
+                                                                          * biased_activation[i])
             ret_weights.append(new_weights)
         ret_weights.reverse()
         return ret_weights

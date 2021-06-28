@@ -104,24 +104,7 @@ def run(b, move_perceptron, promote_perceptron, players):
                         raise Exception("Color to move isn't \"w\" or \"b\"")
 
             else:
-                print("Game finished! Trying to learn from it")
-                print("Learning last position")
-                fen = b.get_fen()
-                data = util.get_data(fen)
-                p, a = move_perceptron.predict(data)
-                if b.get_status() == "w":
-                    target_p = 1.0
-                elif b.get_status() == "b":
-                    target_p = 0.0
-                else:
-                    target_p = 0.5
-                move_perceptron.weights = move_perceptron.back_prop(
-                    a,
-                    p,
-                    target_p
-                )
-                print("Saving weights")
-                util.save_weights(move_perceptron.weights, "data/weights.npy")
+                print("Game finished!")
 
                 pg.event.clear()
                 pg.event.post(pg.event.Event(QUIT))

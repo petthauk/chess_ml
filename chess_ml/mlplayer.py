@@ -13,6 +13,10 @@ def sort_node_func(e):
     return e.get_sort_prediction()
 
 
+def sort_children_func(e):
+    return e.get_prediction()
+
+
 def finished_game(status):
     """
     Checks if game is finished
@@ -60,7 +64,7 @@ class MlPlayer:
         if self.color == "w":
             move_node = self.minimax(root, -0.1, 1.1, True)
         else:
-            move_node = self.minimax(root, 1.1, -0.1, False)
+            move_node = self.minimax(root, -0.1, 1.1, False)
 
         self.board.set_status("-")
         self.board.set_fen(root.get_fen())
@@ -158,12 +162,16 @@ class MlPlayer:
                     for m in moves:
                         to = [fr[0] + m[0], fr[1] + m[1]]
 
-                        # Move piece
                         self.board.move_piece(fr, to)
 
                         if self.board.get_promoting():
                             for piece in ["q", "r", "b", "n"]:
-                                self.board.promote_pawn(to, piece)
+                                self.board.set_fen(node.get_fen())
+                                self.board.board_array = self.board.set_board_array()
+                                self.board.add_pieces()
+
+                                self.board.move_piece(fr, to)
+                                self.board.promote_pawn(to, piece, print_promote=False)
                                 self.board.next_turn(visual=False)
                                 p, a, fen = self.predict_pos()
 
@@ -213,10 +221,7 @@ class MlPlayer:
                 node_list.append(child)
 
             # Sort node_list so it always checks the node with the greatest prediction next
-            if color == "w":
-                node_list.sort(key=sort_node_func, reverse=True)
-            elif color == "b":
-                node_list.sort(key=sort_node_func)
+            node_list.sort(key=sort_node_func, reverse=True)
 
     def minimax(self, position, alpha, beta, maximizing_player):
         """
@@ -230,30 +235,34 @@ class MlPlayer:
             return position
 
         ret_pos = position
+        alpha2 = alpha
+        beta2 = beta
 
         if maximizing_player:
             max_eval = -0.1
+            position.get_children().sort(key=sort_children_func, reverse=True)
             for child in position.get_children():
-                pos = self.minimax(child, alpha, beta, False)
+                pos = self.minimax(child, alpha2, beta2, False)
                 eval = pos.get_prediction()
                 if eval >= max_eval:
                     max_eval = eval
                     ret_pos = child
                     ret_pos.set_prediction(eval)
-                alpha2 = max(alpha, eval)
-                if beta <= alpha2:
+                alpha2 = max(alpha2, eval)
+                if beta2 <= alpha2:
                     break
         else:
             min_eval = 1.1
+            position.get_children().sort(key=sort_children_func, reverse=True)
             for child in position.get_children():
-                pos = self.minimax(child, alpha, beta, True)
+                pos = self.minimax(child, alpha2, beta2, True)
                 eval = pos.get_prediction()
                 if eval <= min_eval:
                     min_eval = eval
                     ret_pos = child
                     ret_pos.set_prediction(eval)
-                beta2 = min(beta, eval)
-                if beta2 <= alpha:
+                beta2 = min(beta2, eval)
+                if beta2 <= alpha2:
                     break
         return ret_pos
 

@@ -192,7 +192,8 @@ def save_weights(weights, file):
     :param file: file to save to. will make a new file if it doesn't exist
     :return:
     """
-    np.save(file, weights)
+    weight_save = np.array(weights, dtype=object)
+    np.save(file, weight_save)
 
 
 def add_bias(data):
