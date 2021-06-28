@@ -4,7 +4,7 @@ import util.util as util
 def add_move_for_straight_line_pieces(move_matrix, row, col, game_board, piece, moves):
     """
     Adds moves for Rook, Bishop and Queen
-    :param move_matrix: How the piece moves
+    :param move_matrix: How the piece moves. Will continue in a straight line in these directions.
     :param row: Which row the piece is on
     :param col: Which column the piece is on
     :param game_board: game_board array
