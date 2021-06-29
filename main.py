@@ -3,16 +3,13 @@ from chess_ml import mlplayer
 import util.util as util
 import pygame as pg
 from pygame.locals import *
-import numpy as np
 from chess_ml.perceptron import Perceptron
 
 
-def run(b, move_perceptron, promote_perceptron, players):
+def run(b, players):
     """
     Run one game
     :param b: Board
-    :param move_perceptron: Perceptron for moving
-    :param promote_perceptron: Perceptron for promoting
     :param players: List of two players
     :return:
     """
@@ -55,7 +52,7 @@ def run(b, move_perceptron, promote_perceptron, players):
                                     (color == "w" and players[1].get_color() == "b")
                                     or
                                     (color == "b" and players[0].get_color() == "w")
-                                ):  # Asking computer for draw
+                            ):  # Asking computer for draw
                                 fen = b.get_fen()
                                 data = util.get_data(fen)
                                 perceptron = Perceptron(fen, "data/weights.npy")
@@ -125,10 +122,9 @@ def main():
         g = game.Game()
         b = g.get_board()
         move_perceptron = Perceptron(b.get_fen(), "data/weights.npy")
-        promote_perceptron = Perceptron(b.get_fen(), "data/promote_weights.npy")
-        run(b, move_perceptron, promote_perceptron, players=[
-            mlplayer.MlPlayer("w", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron),
-            mlplayer.MlPlayer("b", b, p_tron=move_perceptron, promote_p_tron=promote_perceptron)
+        run(b, players=[
+            mlplayer.MlPlayer("w", b, p_tron=move_perceptron),
+            mlplayer.MlPlayer("b", b, p_tron=move_perceptron)
         ])
 
 
