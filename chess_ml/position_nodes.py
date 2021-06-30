@@ -1,17 +1,9 @@
-import copy
-
-
-def sort_children_func(e):
-    return e.get_prediction()
-
-
 class Node:
     def __init__(self, prediction, activation, fen, bw, promote, sort_prediction):
         self.prediction = prediction
         self.activation = activation
         self.fen = fen
         self.children = []
-        self.visited = False
         self.fr = None
         self.to = None
         self.bw = bw
@@ -19,9 +11,17 @@ class Node:
         self.sort_prediction = sort_prediction
 
     def get_sort_prediction(self):
+        """
+        Gets prediction for sorting on moves (previous_move * 10 + current_move)
+        :return: sort prediction
+        """
         return self.sort_prediction
 
     def get_promote(self):
+        """
+        Gets which piece to promote to. None if not promoting
+        :return: (String) Which piece to promote to
+        """
         return self.promote
 
     def set_prediction(self, prediction):
@@ -64,14 +64,6 @@ class Node:
         self.children.append(child)
         child.add_move(move)
 
-    def sort_children(self, rev):
-        """
-        Sorts children based on prediction
-        :param rev: If sorting should be reversed
-        :return:
-        """
-        self.children.sort(key=sort_children_func, reverse=rev)
-
     def get_children(self):
         """
         Gets list of children
@@ -79,21 +71,25 @@ class Node:
         """
         return self.children
 
-    def visit(self):
-        self.visited = True
-
-    def unvisit(self):
-        self.visited = False
-
-    def is_visited(self):
-        return self.visited
-
     def add_move(self, move):
+        """
+        Adds move
+        :param move: (List) [from, to]
+        :return:
+        """
         self.fr = move[0]
         self.to = move[1]
 
     def get_move(self):
+        """
+        Gets move
+        :return: (Tuple) from, to
+        """
         return self.fr, self.to
 
     def get_bw(self):
+        """
+        Get who is moving after this position
+        :return: (String) "w" if white is moving, "b" if black is moving
+        """
         return self.bw

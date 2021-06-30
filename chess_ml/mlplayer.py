@@ -50,8 +50,8 @@ class MlPlayer:
         self.color = color
         self.perceptron = p_tron
         self.board = board
-        self.game_history = []
-        self.promote_history = []
+        self.move_list = []
+        self.predict_time = []
 
     def get_color(self):
         """
@@ -81,6 +81,8 @@ class MlPlayer:
 
         # Breadth-First-Search to make tree of positions from root-node
         self.BFS(root, time.time())
+        mean_predict = np.mean(self.predict_time)
+        print("Mean predict time: {} seconds".format(mean_predict))
 
         # Using minimax to get best node to move to
         print("Minimax")
@@ -130,7 +132,7 @@ class MlPlayer:
         print("\nChoosing move with prediction: {}\n".format(move_node.get_prediction()))
         return move_node.get_move()[0], move_node.get_move()[1], move_node.get_promote()
 
-    def BFS(self, root, tic, seconds=60.0):
+    def BFS(self, root, tic, seconds=5.0):
         """
         Breadth first search to get tree of positions
         :param root: (Node) root
@@ -143,6 +145,7 @@ class MlPlayer:
         color = self.board.get_bw()
         full_move = self.board.get_full_move()
         node_list = [root]
+
         while len(node_list) > 0:
             node = node_list.pop(0)
             self.board.set_fen(node.get_fen())
@@ -161,7 +164,7 @@ class MlPlayer:
             # Get node-prediction for sorting on prediction
             fen = self.board.get_fen()
             data = util.get_data(fen)
-            node_prediction, _ = self.perceptron.predict(data)
+            node_prediction, node_activation = self.perceptron.predict(data)
 
             # Flip prediction if current position has black to move
             if self.board.get_bw() == "b":
@@ -179,7 +182,8 @@ class MlPlayer:
                 print("Depth: {}".format(depth))
 
             # List of moves in current position
-            move_list = []
+            self.move_list = []
+            moves = []
 
             # Go through every square of the board, find every possible move and move them to find prediction
             for row in range(8):
@@ -187,7 +191,7 @@ class MlPlayer:
                     fr = [row, col]
 
                     # Find legal moves
-                    moves = chess_logic.legal_moves(
+                    legal_moves = chess_logic.legal_moves(
                         self.board.get_board_array(),
                         fr,
                         self.board.get_bw(),
@@ -195,49 +199,58 @@ class MlPlayer:
                         self.board.get_en_passent()
                     )
 
-                    # Go through every move
-                    for m in moves:
+                    for m in legal_moves:
                         to = [fr[0] + m[0], fr[1] + m[1]]
+                        moves.append([fr, to])
 
-                        # Move piece
-                        self.board.move_piece(fr, to)
+            # Go through every move
+            for m in moves:
+                tic1 = time.time()
 
-                        # If move did that a pawn can promote
-                        if self.board.get_promoting():
-                            for piece in ["q", "r", "b", "n"]:
-                                self.board.set_fen(node.get_fen())
-                                self.board.board_array = self.board.set_board_array()
-                                self.board.add_pieces()
+                fr = m[0]
+                to = m[1]
 
-                                self.board.move_piece(fr, to)
-                                self.board.promote_pawn(to, piece, print_promote=False)
+                # Move piece
+                self.board.move_piece(fr, to)
 
-                                move_list, br_out = self.predict_on_new_position_and_add_to_move_list(
-                                    move_list,
-                                    fr,
-                                    to,
-                                    piece
-                                )
-
-                                if br_out:
-                                    break
-                        else:  # If ordinary move
-                            move_list, br_out = self.predict_on_new_position_and_add_to_move_list(
-                                move_list,
-                                fr,
-                                to,
-                                None
-                            )
-
+                # If move did that a pawn can promote
+                if self.board.get_promoting():
+                    for piece in ["q", "r", "b", "n"]:
                         self.board.set_fen(node.get_fen())
                         self.board.board_array = self.board.set_board_array()
                         self.board.add_pieces()
 
+                        self.board.move_piece(fr, to)
+                        self.board.promote_pawn(to, piece, print_promote=False)
+
+                        br_out = self.predict_on_new_position_and_add_to_move_list(
+                            fr,
+                            to,
+                            piece
+                        )
+
                         if br_out:
                             break
 
+                else:  # If ordinary move
+                    br_out = self.predict_on_new_position_and_add_to_move_list(
+                        fr,
+                        to,
+                        None
+                    )
+
+                self.board.set_fen(node.get_fen())
+                self.board.board_array = self.board.set_board_array()
+                self.board.add_pieces()
+
+                toc1 = time.time()
+                self.predict_time.append(toc1-tic1)
+
+                if br_out:
+                    break
+
             # Add moves and positions from move list to node_list and position-tree
-            for m in move_list:
+            for m in self.move_list:
                 fr = m[0][0]
                 to = m[0][1]
                 prediction = m[1]
@@ -330,24 +343,22 @@ class MlPlayer:
 
         return prediction, activations, fen
 
-    def predict_on_new_position_and_add_to_move_list(self, move_list, fr, to, piece):
+    def predict_on_new_position_and_add_to_move_list(self, fr, to, piece):
         """
         Predicts on position after a move and adds info to list of moves
-        :param move_list: (List) list of moves
         :param fr: (List) Square to move from
         :param to: (List) Square to move to
         :param piece: (String) which piece we have promoted to. None if no piece has been promoted
         :return: move_list (updated list of moves), br_out (if we should break out of loop)
         """
-        new_move_list = move_list.copy()
         br_out = False
-        self.board.next_turn(visual=False)
+        self.board.next_turn(visual=True)
 
         # Prediction on position
         prediction, activations, fen = self.predict_pos()
 
         # Add move with prediction and other info to list of moves
-        new_move_list.append([[fr, to], prediction, activations, fen, self.board.get_bw(), piece])
+        self.move_list.append([[fr, to], prediction, activations, fen, self.board.get_bw(), piece])
 
         # If move made that we win, we can't find any better move
         # So we can set "break out" to True
@@ -358,4 +369,4 @@ class MlPlayer:
         self.board.set_status("-")
         self.board.positions_in_game[self.board.get_fen_pos()] -= 1
 
-        return new_move_list, br_out
+        return br_out

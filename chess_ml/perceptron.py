@@ -9,12 +9,7 @@ def sigmoid(x):
     :param x: value to pass through logistic function
     :return: Float between 0.0 and 1.0
     """
-    try:
-        return 1 / (1 + math.exp(-x))
-    except OverflowError:
-        if x < -50.0:
-            return 1.0
-        return 0.0
+    return float(1 / (1 + math.exp(-x)))
 
 
 class Perceptron:
@@ -31,7 +26,7 @@ class Perceptron:
         """
         if file == "data/weights.npy":
             length = len(util.get_data(self.fen))
-            ret = util.get_weights(
+            weigh = util.get_weights(
                 file,
                 layer_sizes=np.array([
                     length,
@@ -40,49 +35,29 @@ class Perceptron:
                     1
                 ], dtype=object)
             )
-            for w in ret:
-                self.weights.append(w)
-
-        elif file == "data/promote_weights.npy":
-            length = len(util.get_promote_data(self.fen, "n"))
-            ret = util.get_weights(
-                file,
-                layer_sizes=np.array([
-                    length,
-                    128,
-                    64,
-                    1
-                ], dtype=object)
-            )
-            for w in ret:
+            for w in weigh:
                 self.weights.append(w)
         else:
-            raise Exception("Filename should either be \"data/weights.npy\" or \"data/promote_weights.npy\"")
+            raise Exception("Filename should be \"data/weights.npy\"")
 
     def predict(self, data):
         """
-        Predicts chance of winning from fen-string and move
-        :param data: a list with all the data
-        :return: chance of winning
+        Predicts chance of winning from data
+        :param data: (List) data from fen-string
+        :return: (Float) chance of winning between 0.0 and 1.0
         """
         output = 0.5
-        activation = data.copy()
-        activations = [activation]
+        activations = [data]
         for lr in range(len(self.weights)):
-            biased_data = util.add_bias(activation)
+            biased_data = util.add_bias(activations[lr])
             layer = np.zeros(len(self.weights[lr].T))
             for to_node in range(len(layer)):
-                for w in range(len(self.weights[lr])):
-                    b_data = biased_data[w]
-                    if b_data != 0:
-                        weight = self.weights[lr][w, to_node]
-                        layer[to_node] += b_data * weight
+                layer[to_node] = np.dot(biased_data, self.weights[lr].T[to_node])
                 layer[to_node] = sigmoid(layer[to_node])
             if lr == len(self.weights) - 1:
                 output = layer[0]
             else:
-                activation = layer.copy()
-                activations.append(activation)
+                activations.append(layer)
         return output, activations
 
     def back_prop(self, data, predict, target, eta=0.1):
@@ -114,7 +89,9 @@ class Perceptron:
                 elif lr != -len(self.weights):
                     delta_times = 0.0
                     for j in range(len(new_weights[i])):
-                        new_weights[i][j] = self.weights[lr][i][j] + (eta * delta[abs(lr+1)][j+1] * biased_activation[i])
+                        new_weights[i][j] = self.weights[lr][i][j] + (eta
+                                                                      * delta[abs(lr+1)][j+1]
+                                                                      * biased_activation[i])
                         delta_times += delta[abs(lr+1)][j+1] * self.weights[lr][i][j]
                     delta[abs(lr)][i] = delta[abs(lr)][i] * delta_times
                 else:
